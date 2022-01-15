@@ -414,6 +414,11 @@
       (net 1 "GND") (pinfunction "CONN_MP") (pintype "passive") (tstamp 7d86ba37-b98f-40a5-b35f-96db8417b185))
     (pad "MP" smd rect (at -7.9 -24.9 180) (size 1.8 2.2) (layers "B.Cu" "B.Paste" "B.Mask")
       (net 1 "GND") (pinfunction "CONN_MP") (pintype "passive") (tstamp 86a34ff8-9697-4394-b32e-9c903027c8af))
+    (model "${KIPRJMOD}/c-2-1734592-5-c-3d.stp"
+      (offset (xyz 0 27 -2.8))
+      (scale (xyz 1 1 1))
+      (rotate (xyz 90 0 0))
+    )
   )
 
   (footprint "MountingHole:MountingHole_3.2mm_M3_Pad_Via" (layer "F.Cu")
