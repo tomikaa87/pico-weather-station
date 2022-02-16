@@ -1,5 +1,7 @@
 #include "Display.h"
 
+#include "../Fonts.h"
+
 #include <u8g2.h>
 
 #include <iostream>
@@ -31,6 +33,7 @@ Display::Display()
     : _p{ std::make_unique<Private>() }
 {
     setup();
+    setFont(Font{ Font::Family::NormalText });
 }
 
 Display::~Display() = default;
@@ -40,9 +43,45 @@ void Display::clear()
     u8g2_ClearDisplay(&_p->u8g2);
 }
 
+void Display::clearBuffer()
+{
+    u8g2_ClearBuffer(&_p->u8g2);
+}
+
+void Display::update()
+{
+    u8g2_SendBuffer(&_p->u8g2);
+}
+
 void Display::setContrast(const uint8_t value)
 {
     u8g2_SetContrast(&_p->u8g2, value);
+}
+
+void Display::setDrawColor(const Color color)
+{
+    u8g2_SetDrawColor(&_p->u8g2, static_cast<int>(color));
+}
+
+void Display::setFont(const Font& font)
+{
+    if (const auto* const data = font.data(); data != nullptr) {
+        u8g2_SetFont(&_p->u8g2, data);
+    }
+}
+
+void Display::drawText(const Point& pos, const std::string& s)
+{
+    u8g2_DrawStr(&_p->u8g2, pos.x(), pos.y(), s.c_str());
+}
+
+void Display::drawBitmap(
+    const Point& pos,
+    const int width,
+    const int height,
+    const uint8_t* const data)
+{
+    u8g2_DrawXBM(&_p->u8g2, pos.x(), pos.y(), width, height, data);
 }
 
 void Display::setup()

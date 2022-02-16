@@ -20,9 +20,13 @@ add_executable(oled
 
     ${CMAKE_SOURCE_DIR}/src/Widgets/Display.cpp
     ${CMAKE_SOURCE_DIR}/src/Widgets/Display.h
+    ${CMAKE_SOURCE_DIR}/src/Widgets/Font.cpp
+    ${CMAKE_SOURCE_DIR}/src/Widgets/Font.h
     ${CMAKE_SOURCE_DIR}/src/Widgets/Rect.h
     ${CMAKE_SOURCE_DIR}/src/Widgets/Painter.cpp
     ${CMAKE_SOURCE_DIR}/src/Widgets/Painter.h
+    ${CMAKE_SOURCE_DIR}/src/Widgets/Point.cpp
+    ${CMAKE_SOURCE_DIR}/src/Widgets/Point.h
     ${CMAKE_SOURCE_DIR}/src/Widgets/ProgressBar.cpp
     ${CMAKE_SOURCE_DIR}/src/Widgets/ProgressBar.h
 )

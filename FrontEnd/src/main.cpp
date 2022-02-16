@@ -126,6 +126,15 @@ int main()
     signal(SIGTERM, signalHandler);
     signal(SIGINT, signalHandler);
 
+    display.drawBitmap(
+        { 0, 0 },
+        Graphics::MainScreen_width,
+        Graphics::MainScreen_height,
+        Graphics::MainScreen_bits
+    );
+    display.drawText({ 20, 140 }, "It works!");
+    display.update();
+
     // auto u8g2 = setup_display();
     // g_u8g2 = &u8g2;
 
