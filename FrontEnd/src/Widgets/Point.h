@@ -16,6 +16,8 @@ public:
     [[nodiscard]] bool operator==(const Point& p) const;
     [[nodiscard]] bool operator!=(const Point& p) const;
 
+    friend Point operator+(const Point& p1, const Point& p2);
+
 private:
     int _x = 0;
     int _y = 0;

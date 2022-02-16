@@ -95,5 +95,7 @@ void Widget::paint(Display& display) const
         size()
     };
 
+    display.setClipRect(mappedRect);
     display.drawRect(mappedRect);
+    display.resetClipRect();
 }

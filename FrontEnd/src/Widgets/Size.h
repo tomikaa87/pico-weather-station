@@ -18,6 +18,8 @@ public:
     [[nodiscard]] bool operator==(const Size& p) const;
     [[nodiscard]] bool operator!=(const Size& p) const;
 
+    friend Size operator+(const Size& s1, const Size& s2);
+
 private:
     int _w = 0;
     int _h = 0;

@@ -31,3 +31,11 @@ bool Size::operator!=(const Size& s) const
 {
     return !(*this == s);
 }
+
+Size operator+(const Size& s1, const Size& s2)
+{
+    return Size{
+        s1._w + s2._w,
+        s1._h + s2._h
+    };
+}

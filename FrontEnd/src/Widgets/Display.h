@@ -28,6 +28,8 @@ public:
     void setContrast(uint8_t value);
     void setDrawColor(Color color);
     void setFont(const Font& font);
+    void setClipRect(const Rect& rect);
+    void resetClipRect();
 
     void drawText(const Point& pos, const std::string& s);
     void drawBitmap(const Point& pos, int width, int height, const uint8_t* data);
