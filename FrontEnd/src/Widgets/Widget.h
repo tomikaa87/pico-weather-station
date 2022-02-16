@@ -12,8 +12,8 @@ class Display;
 class Widget
 {
 public:
-    explicit Widget(Widget* parent = nullptr);
-    Widget(std::string name, Widget* parent = nullptr);
+    explicit Widget(Display* display);
+    explicit Widget(Widget* parent);
 
     virtual ~Widget();
 
@@ -21,6 +21,8 @@ public:
     Widget(Widget&&) = delete;
     Widget& operator=(const Widget&) = delete;
     Widget& operator=(Widget&&) = delete;
+
+    void setName(std::string name);
 
     const Point& pos() const;
     const Size& size() const;
@@ -33,11 +35,12 @@ public:
     Point mapToGlobal(const Point& p) const;
     Point mapToParent(const Point& p) const;
 
-    void paint(Display& display) const;
+    virtual void paint() const;
 
 protected:
-    std::string _name;
+    Display* const _display;
     Widget* const _parent;
+    std::string _name;
     std::vector<Widget*> _children;
     Rect _rect;
 };

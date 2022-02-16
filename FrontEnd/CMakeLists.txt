@@ -22,6 +22,8 @@ add_executable(oled
     ${CMAKE_SOURCE_DIR}/src/Widgets/Display.h
     ${CMAKE_SOURCE_DIR}/src/Widgets/Font.cpp
     ${CMAKE_SOURCE_DIR}/src/Widgets/Font.h
+    ${CMAKE_SOURCE_DIR}/src/Widgets/Label.cpp
+    ${CMAKE_SOURCE_DIR}/src/Widgets/Label.h
     ${CMAKE_SOURCE_DIR}/src/Widgets/Rect.h
     ${CMAKE_SOURCE_DIR}/src/Widgets/Painter.cpp
     ${CMAKE_SOURCE_DIR}/src/Widgets/Painter.h

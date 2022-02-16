@@ -2,6 +2,7 @@
 #include "Graphics.h"
 
 #include "Widgets/Display.h"
+#include "Widgets/Label.h"
 #include "Widgets/ProgressBar.h"
 #include "Widgets/Widget.h"
 
@@ -127,13 +128,18 @@ int main()
     signal(SIGTERM, signalHandler);
     signal(SIGINT, signalHandler);
 
-    Widget w1{ "w1" };
+    Widget w1{ &display };
+    w1.setName("w1");
     w1.setRect({ 10, 10, 50, 50 });
 
-    Widget w1_1{ "w1_1", &w1 };
+    Widget w1_1{ &w1 };
+    w1_1.setName("w1_1");
     w1_1.setRect({ 1, 1, 10, 10 });
 
-    w1.paint(display);
+    Label l1{ "This is a label", &w1 };
+    l1.setRect({ 1, 12, 40, 10 });
+
+    w1.paint();
 
     // display.drawBitmap(
     //     { 0, 0 },

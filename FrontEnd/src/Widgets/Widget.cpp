@@ -4,17 +4,16 @@
 
 #include <algorithm>
 
-Widget::Widget(Widget* parent)
-    : Widget{ {}, parent }
+Widget::Widget(Display* display)
+    : _display{ display }
+    , _parent{ nullptr }
 {}
 
-Widget::Widget(std::string name, Widget* parent)
-    : _parent{ parent }
-    , _name{ std::move(name) }
+Widget::Widget(Widget* parent)
+    : _display{ parent->_display }
+    , _parent{ parent }
 {
-    if (_parent) {
-        _parent->_children.push_back(this);
-    }
+    parent->_children.push_back(this);
 }
 
 Widget::~Widget()
@@ -25,6 +24,11 @@ Widget::~Widget()
             this
         );
     }
+}
+
+void Widget::setName(std::string name)
+{
+    _name = std::move(name);
 }
 
 const Point& Widget::pos() const
@@ -82,10 +86,10 @@ Point Widget::mapToParent(const Point& p) const
     };
 }
 
-void Widget::paint(Display& display) const
+void Widget::paint() const
 {
     for (auto child : _children) {
-        child->paint(display);
+        child->paint();
     }
 
     printf("Painter::paint: widget=%s\r\n", _name.c_str());
@@ -95,7 +99,7 @@ void Widget::paint(Display& display) const
         size()
     };
 
-    display.setClipRect(mappedRect);
-    display.drawRect(mappedRect);
-    display.resetClipRect();
+    _display->setClipRect(mappedRect);
+    _display->drawRect(mappedRect);
+    _display->resetClipRect();
 }
