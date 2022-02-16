@@ -16,9 +16,15 @@ add_executable(oled
     ${CMAKE_SOURCE_DIR}/src/Fonts.h
     ${CMAKE_SOURCE_DIR}/src/Graphics.cpp
     ${CMAKE_SOURCE_DIR}/src/Graphics.h
-    ${CMAKE_SOURCE_DIR}/src/ProgressBar.cpp
-    ${CMAKE_SOURCE_DIR}/src/ProgressBar.h
     ${CMAKE_SOURCE_DIR}/src/u8x8_d_st7586s_erc240160_chunked.c
+
+    ${CMAKE_SOURCE_DIR}/src/Widgets/Display.cpp
+    ${CMAKE_SOURCE_DIR}/src/Widgets/Display.h
+    ${CMAKE_SOURCE_DIR}/src/Widgets/Rect.h
+    ${CMAKE_SOURCE_DIR}/src/Widgets/Painter.cpp
+    ${CMAKE_SOURCE_DIR}/src/Widgets/Painter.h
+    ${CMAKE_SOURCE_DIR}/src/Widgets/ProgressBar.cpp
+    ${CMAKE_SOURCE_DIR}/src/Widgets/ProgressBar.h
 )
 
 # u8g2 library
@@ -60,4 +66,9 @@ target_link_libraries(oled
         fmt
         u8g2
         wiringpi
+)
+
+target_compile_definitions(oled
+    PRIVATE
+        RASPBERRY_PI
 )

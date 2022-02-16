@@ -1,24 +1,20 @@
 #include "Fonts.h"
 #include "Graphics.h"
-#include "ProgressBar.h"
+
+#include "Widgets/Display.h"
+#include "Widgets/ProgressBar.h"
 
 #include <algorithm>
 #include <csignal>
 #include <iostream>
 #include <string>
 
-#include <wiringPi.h>
-#include <wiringPiI2C.h>
-#include <wiringPiSPI.h>
-
-#include <u8g2.h>
-#include <u8x8.h>
-#include <U8g2lib.h>
-
 #include <unistd.h>
 #include <termios.h>
 
 #include <fmt/core.h>
+
+static Display display;
 
 char getch()
 {
@@ -41,393 +37,13 @@ char getch()
     return (buf);
 }
 
-static const uint8_t display_dev_id = 0x3c;
-
-int g_i2c_fd = 0;
-
-// #define DEBUG
-
-extern "C" {
-uint8_t u8g2_rpi_hw_i2c_byte(u8x8_t* u8x8, uint8_t msg, uint8_t arg_int, void* arg_ptr)
-{
-#ifdef DEBUG
-    std::cout << __FUNCTION__ << ": arg_int=" << (int)arg_int << ", msg=";
-#endif
-
-    static int s_i2c_mode = 0;
-    static bool s_first_byte_after_start = false;
-
-    switch (msg)
-    {
-        case U8X8_MSG_BYTE_INIT:
-#ifdef DEBUG
-            std::cout << "U8X8_MSG_BYTE_INIT";
-#endif
-            break;
-
-        case U8X8_MSG_BYTE_START_TRANSFER:
-#ifdef DEBUG
-            std::cout << "U8X8_MSG_BYTE_START_TRANSFER";
-#endif
-            s_first_byte_after_start = true;
-            s_i2c_mode = 0;
-            break;
-
-        case U8X8_MSG_BYTE_END_TRANSFER:
-#ifdef DEBUG
-            std::cout << "U8X8_MSG_BYTE_END_TRANSFER";
-#endif
-            break;
-
-        case U8X8_MSG_BYTE_SEND:
-        {
-#ifdef DEBUG
-            std::cout << "U8X8_MSG_BYTE_SEND:";
-            std::cout << std::hex;
-#endif
-
-            if (s_first_byte_after_start)
-            {
-                s_first_byte_after_start = false;
-                s_i2c_mode = *reinterpret_cast<uint8_t*>(arg_ptr);
-#ifdef DEBUG
-                std::cout << " setting mode to " << s_i2c_mode;
-#endif
-                break;
-            }
-
-            auto p = reinterpret_cast<uint8_t*>(arg_ptr);
-            for (int i = 0; i < arg_int; ++i)
-            {
-                auto data = *p++;
-#ifdef DEBUG
-                std::cout << " " << (int)data;
-#endif
-                wiringPiI2CWriteReg8(g_i2c_fd, s_i2c_mode, data);
-            }
-#ifdef DEBUG
-            std::cout << std::dec;
-#endif
-
-            break;
-        }
-
-        default:
-#ifdef DEBUG
-            std::cout << "UNKNOWN(" << (int)msg << ")";
-#endif
-            break;
-    }
-
-#ifdef DEBUG
-    std::cout << std::endl;
-#endif
-
-    return 0;
-}
-
-uint8_t u8g2_rpi_gpio_delay(u8x8_t* u8x8, uint8_t msg, uint8_t arg_int, void* arg_ptr)
-{
-#ifdef DEBUG
-    std::cout << __FUNCTION__ << ": arg_int=" << (int)arg_int << ", msg=";
-#endif
-
-    switch (msg)
-    {
-        case U8X8_MSG_GPIO_AND_DELAY_INIT:
-#ifdef DEBUG
-            std::cout << "U8X8_MSG_GPIO_AND_DELAY_INIT";
-#endif
-            break;
-
-        case U8X8_MSG_DELAY_MILLI:
-#ifdef DEBUG
-            std::cout << "U8X8_MSG_DELAY_MILLI";
-#endif
-            delay(arg_int);
-            break;
-
-        case U8X8_MSG_GPIO_RESET:
-#ifdef DEBUG
-            std::cout << "U8X8_MSG_GPIO_RESET";
-#endif
-            break;
-
-        default:
-#ifdef DEBUG
-            std::cout << "UNKNOWN(" << (int)msg << ")";
-#endif
-            break;
-    }
-
-#ifdef DEBUG
-    std::cout << std::endl;
-#endif
-
-    return 0;
-}
-
-} // extern "C"
-
-void sleep_ms(unsigned long milliseconds)
-{
-    struct timespec ts;
-    ts.tv_sec = milliseconds / 1000;
-    ts.tv_nsec = (milliseconds % 1000) * 1000000;
-    nanosleep(&ts, NULL);
-}
-
-void sleep_us(unsigned long microseconds)
-{
-    struct timespec ts;
-    ts.tv_sec = microseconds / 1000 / 1000;
-    ts.tv_nsec = (microseconds % 1000000) * 1000;
-    nanosleep(&ts, NULL);
-}
-
-void sleep_ns(unsigned long nanoseconds)
-{
-    struct timespec ts;
-    ts.tv_sec = 0;
-    ts.tv_nsec = nanoseconds;
-    nanosleep(&ts, NULL);
-}
-
-uint8_t u8x8_wiringpi_gpio_and_delay(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr)
-{
-    static const auto setPin = [](u8x8_t* u8x8, const uint8_t pin, const uint8_t value) {
-        if (const auto p = u8x8->pins[pin]; p != U8X8_PIN_NONE) {
-            digitalWrite(p, value);
-        }
-    };
-
-    (void) arg_ptr; /* suppress unused parameter warning */
-    switch(msg)
-    {
-        case U8X8_MSG_DELAY_NANO:            // delay arg_int * 1 nano second
-            sleep_ns(arg_int);
-            break;
-
-        case U8X8_MSG_DELAY_100NANO:        // delay arg_int * 100 nano seconds
-            sleep_ns(arg_int * 100);
-            break;
-
-        case U8X8_MSG_DELAY_10MICRO:        // delay arg_int * 10 micro seconds
-            sleep_us(arg_int * 10);
-            break;
-
-        case U8X8_MSG_DELAY_MILLI:            // delay arg_int * 1 milli second
-            sleep_ms(arg_int);
-            break;
-
-        case U8X8_MSG_DELAY_I2C:
-            // arg_int is the I2C speed in 100KHz, e.g. 4 = 400 KHz
-            // arg_int=1: delay by 5us, arg_int = 4: delay by 1.25us
-            if(arg_int == 1)
-            {
-                sleep_us(5);
-            }
-            else if (arg_int == 4)
-            {
-                sleep_ns(1250);
-            }
-            break;
-
-        case U8X8_MSG_GPIO_AND_DELAY_INIT:
-            // Function which implements a delay, arg_int contains the amount of ms
-
-            // printf("CLK:%d, DATA:%d, CS:%d, RST:%d, DC:%d\n", u8x8->pins[U8X8_PIN_SPI_CLOCK], u8x8->pins[U8X8_PIN_SPI_DATA], u8x8->pins[U8X8_PIN_CS], u8x8->pins[U8X8_PIN_RESET], u8x8->pins[U8X8_PIN_DC]);
-            // printf("SDA:%d, SCL:%d\n", u8x8->pins[U8X8_PIN_I2C_DATA], u8x8->pins[U8X8_PIN_I2C_CLOCK]);
-
-            // Output pins
-            for (const auto pin : {
-                // SPI
-                U8X8_PIN_SPI_CLOCK,
-                U8X8_PIN_SPI_DATA,
-                U8X8_PIN_CS,
-                // 8080 mode
-                // D0 --> spi clock
-                // D1 --> spi data
-                U8X8_PIN_D2,
-                U8X8_PIN_D3,
-                U8X8_PIN_D4,
-                U8X8_PIN_D5,
-                U8X8_PIN_D5,
-                U8X8_PIN_D6,
-                U8X8_PIN_D7,
-                U8X8_PIN_E,
-                U8X8_PIN_RESET,
-                U8X8_PIN_DC,
-                // I2C
-                U8X8_PIN_I2C_DATA,
-                U8X8_PIN_I2C_CLOCK
-            }) {
-                if (const auto p = u8x8->pins[pin]; p != U8X8_PIN_NONE) {
-                    pinMode(p, OUTPUT);
-                    digitalWrite(p, HIGH);
-                }
-            }
-
-            break;
-
-        //case U8X8_MSG_GPIO_D0:                // D0 or SPI clock pin: Output level in arg_int
-        //case U8X8_MSG_GPIO_SPI_CLOCK:
-
-        //case U8X8_MSG_GPIO_D1:                // D1 or SPI data pin: Output level in arg_int
-        //case U8X8_MSG_GPIO_SPI_DATA:
-
-        case U8X8_MSG_GPIO_D2:                  // D2 pin: Output level in arg_int
-            setPin(u8x8, U8X8_PIN_D2, arg_int);
-            break;
-
-        case U8X8_MSG_GPIO_D3:                  // D3 pin: Output level in arg_int
-	        setPin(u8x8, U8X8_PIN_D3, arg_int);
-            break;
-
-        case U8X8_MSG_GPIO_D4:                  // D4 pin: Output level in arg_int
-            setPin(u8x8, U8X8_PIN_D4, arg_int);
-            break;
-
-        case U8X8_MSG_GPIO_D5:                  // D5 pin: Output level in arg_int
-            setPin(u8x8, U8X8_PIN_D5, arg_int);
-            break;
-
-        case U8X8_MSG_GPIO_D6:                  // D6 pin: Output level in arg_int
-	        setPin(u8x8, U8X8_PIN_D6, arg_int);
-            break;
-
-        case U8X8_MSG_GPIO_D7:                  // D7 pin: Output level in arg_int
-	        setPin(u8x8, U8X8_PIN_D7, arg_int);
-            break;
-
-        case U8X8_MSG_GPIO_E:                   // E/WR pin: Output level in arg_int
-	        setPin(u8x8, U8X8_PIN_E, arg_int);
-            break;
-
-        case U8X8_MSG_GPIO_I2C_CLOCK:
-            // arg_int=0: Output low at I2C clock pin
-            // arg_int=1: Input dir with pullup high for I2C clock pin
-            setPin(u8x8, U8X8_PIN_I2C_CLOCK, arg_int);
-            break;
-
-        case U8X8_MSG_GPIO_I2C_DATA:
-            // arg_int=0: Output low at I2C data pin
-            // arg_int=1: Input dir with pullup high for I2C data pin
-            setPin(u8x8, U8X8_PIN_I2C_DATA, arg_int);
-            break;
-
-        case U8X8_MSG_GPIO_SPI_CLOCK:
-            //Function to define the logic level of the clockline
-            setPin(u8x8, U8X8_PIN_SPI_CLOCK, arg_int);
-            break;
-
-        case U8X8_MSG_GPIO_SPI_DATA:
-            //Function to define the logic level of the data line to the display
-            setPin(u8x8, U8X8_PIN_SPI_DATA, arg_int);
-            break;
-
-	    case U8X8_MSG_GPIO_CS:
-            // Function to define the logic level of the CS line
-            setPin(u8x8, U8X8_PIN_CS, arg_int);
-            break;
-
-        case U8X8_MSG_GPIO_DC:
-            //Function to define the logic level of the Data/ Command line
-            setPin(u8x8, U8X8_PIN_DC, arg_int);
-            break;
-
-        case U8X8_MSG_GPIO_RESET:
-            //Function to define the logic level of the RESET line
-            setPin(u8x8, U8X8_PIN_RESET, arg_int);
-            break;
-
-        default:
-            return 0;
-    }
-    return 1;
-}
-
-uint8_t u8x8_byte_wiringpi_hw_spi(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr)
-{
-    switch(msg)
-    {
-        case U8X8_MSG_BYTE_SEND:
-            wiringPiSPIDataRW(0, reinterpret_cast<uint8_t*>(arg_ptr), arg_int);
-            break;
-
-        case U8X8_MSG_BYTE_INIT: {
-            const auto result = wiringPiSPISetup(0, 64000000);
-            if (result < 0) {
-                std::cout << "Failed to initialize SPI\n";
-            }
-            break;
-        }
-
-        case U8X8_MSG_BYTE_SET_DC:
-            u8x8_gpio_SetDC(u8x8, arg_int);
-            break;
-
-        case U8X8_MSG_BYTE_START_TRANSFER:
-            break;
-
-        case U8X8_MSG_BYTE_END_TRANSFER:
-            break;
-
-        default:
-            return 0;
-    }
-
-    return 1;
-}
-
-extern "C" {
-extern uint8_t u8x8_d_st7586s_erc240160_chunked(
-    u8x8_t *u8x8,
-    uint8_t msg,
-    uint8_t arg_int,
-    void *arg_ptr
-);
-}
-
-u8g2_t setup_display()
-{
-    std::cout << "setting up the display" << std::endl;
-
-    u8g2_t u8g2;
-    // u8g2_Setup_ssd1306_i2c_128x64_noname_f(&u8g2, U8G2_R0, u8g2_rpi_hw_i2c_byte, u8g2_rpi_gpio_delay);
-    // u8g2_Setup_sh1106_i2c_128x64_noname_f(&u8g2, U8G2_R0, u8g2_rpi_hw_i2c_byte, u8g2_rpi_gpio_delay);
-    // u8g2_Setup_st7586s_erc240160_1(&u8g2, U8G2_R0, u8g2_rpi_gpio_delay, u8g2_rpi_gpio_delay);
-    // u8x8_SetPin_4Wire_HW_SPI(u8g2_GetU8x8(&u8g2), cs, dc, reset);
-    // u8g2_Setup_st7586s_erc240160_f(&u8g2, U8G2_R0, u8x8_byte_wiringpi_hw_spi, u8x8_wiringpi_gpio_and_delay);
-    uint8_t tile_buf_height;
-    uint8_t *buf;
-    u8g2_SetupDisplay(
-        &u8g2,
-        u8x8_d_st7586s_erc240160_chunked,
-        u8x8_cad_011,
-        u8x8_byte_wiringpi_hw_spi,
-        u8x8_wiringpi_gpio_and_delay
-    );
-    buf = u8g2_m_30_20_f(&tile_buf_height);
-    u8g2_SetupBuffer(&u8g2, buf, tile_buf_height, u8g2_ll_hvline_horizontal_right_lsb, U8G2_R0);
-    u8x8_SetPin(u8g2_GetU8x8(&u8g2), U8X8_PIN_DC, 24);
-    u8x8_SetPin(u8g2_GetU8x8(&u8g2), U8X8_PIN_RESET, 25);
-
-    u8g2_InitDisplay(&u8g2);
-    u8g2_SetPowerSave(&u8g2, 0);
-    u8g2_SetContrast(&u8g2, 60);
-
-    return u8g2;
-}
-
-u8g2_t* g_u8g2 = nullptr;
-
 void signalHandler(const int)
 {
-    u8g2_ClearDisplay(g_u8g2);
+    display.clear();
     exit(0);
 }
 
+#if 0
 void drawFancyProgressBar(
     u8g2_t* display,
     const int x,
@@ -503,32 +119,25 @@ void drawFancyProgressBar(
 
     // u8g2_SendBuffer(display);
 }
+#endif
 
 int main()
 {
     signal(SIGTERM, signalHandler);
     signal(SIGINT, signalHandler);
 
-    if (const auto result = wiringPiSetupGpio(); result != 0) {
-        std::cout << "wiringPiSetupFailed: result=" << result << '\n';
-        return 1;
-    }
-
-    g_i2c_fd = wiringPiI2CSetup(display_dev_id);
-    std::cout << "i2c_fd=" << g_i2c_fd << '\n';
-
-    auto u8g2 = setup_display();
-    g_u8g2 = &u8g2;
+    // auto u8g2 = setup_display();
+    // g_u8g2 = &u8g2;
 
     std::cout << "drawing test picture" << std::endl;
 
     // u8g2_ClearBuffer(&u8g2);
-    u8g2_DrawXBM(&u8g2, 0, 0, Graphics::MainScreen_width, Graphics::MainScreen_height, Graphics::MainScreen_bits);
+    // u8g2_DrawXBM(&u8g2, 0, 0, Graphics::MainScreen_width, Graphics::MainScreen_height, Graphics::MainScreen_bits);
     // u8g2_SetDrawColor(&u8g2, 1);
     // u8g2_DrawCircle(&u8g2, 20, 20, 10, U8G2_DRAW_ALL);
-    u8g2_SetFont(&u8g2, Fonts::PFT7Condensed);
+    // u8g2_SetFont(&u8g2, Fonts::PFT7Condensed);
     // u8g2_DrawStr(&u8g2, 0, 140, "Hello");
-    u8g2_SendBuffer(&u8g2);
+    // u8g2_SendBuffer(&u8g2);
 
     // u8g2_SetDrawColor(&u8g2, 1);
     // u8g2_SetFont(&u8g2, u8g2_font_nokiafc22_tr);
@@ -591,13 +200,13 @@ int main()
                 break;
             case 'z':
                 --contrast;
-                u8g2_SetContrast(&u8g2, contrast);
+                // u8g2_SetContrast(&u8g2, contrast);
                 std::cout << "contrast=" << static_cast<int>(contrast) << '\n';
                 updateLabelOnly = true;
                 break;
             case 'x':
                 ++contrast;
-                u8g2_SetContrast(&u8g2, contrast);
+                // u8g2_SetContrast(&u8g2, contrast);
                 std::cout << "contrast=" << static_cast<int>(contrast) << '\n';
                 updateLabelOnly = true;
                 break;
@@ -605,6 +214,7 @@ int main()
                 break;
         }
 
+#if 0
         if (update) {
             u8g2_ClearBuffer(&u8g2);
             if (updateLabelOnly) {
@@ -616,6 +226,7 @@ int main()
             }
             u8g2_SendBuffer(&u8g2);
         }
+#endif
     }
 
     // // Background
@@ -643,7 +254,7 @@ int main()
     // u8g2_SetDrawColor(&u8g2, 1);
     // u8g2_DrawStr(&u8g2, 0, 40, "PF Tempesta 7 Condensed");
 
-    u8g2_SendBuffer(&u8g2);
+    // u8g2_SendBuffer(&u8g2);
 
 #if 0
     ProgressBar progressBar{ u8g2 };
