@@ -84,6 +84,11 @@ void Display::drawBitmap(
     u8g2_DrawXBM(&_p->u8g2, pos.x(), pos.y(), width, height, data);
 }
 
+void Display::drawRect(const Rect& rect)
+{
+    u8g2_DrawFrame(&_p->u8g2, rect.x(), rect.y(), rect.w(), rect.h());
+}
+
 void Display::setup()
 {
 #ifdef RASPBERRY_PI

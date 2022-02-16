@@ -1,63 +1,36 @@
 #pragma once
 
+#include "Point.h"
+#include "Size.h"
+
 class Rect
 {
 public:
     Rect() = default;
-    Rect(
-        const int x,
-        const int y,
-        const int w,
-        const int h
-    )
-        : _x{ x }
-        , _y{ y }
-        , _w{ w }
-        , _h{ h }
-    {}
+    Rect(int x, int y, int w, int h);
+    Rect(Point pos, Size size);
+    Rect(const Rect&) = default;
+    Rect(Rect&&) = default;
 
-    [[nodiscard]] bool isNull() const
-    {
-        return _w <= 0 && _h <= 0;
-    }
+    [[nodiscard]] bool isNull() const;
 
-    [[nodiscard]] bool operator==(const Rect& r) const
-    {
-        return
-            _x == r._x
-            && _y == r._y
-            && _w == r._w
-            && _h == r._h;
-    }
+    [[nodiscard]] int x() const;
+    [[nodiscard]] int y() const;
+    [[nodiscard]] int w() const;
+    [[nodiscard]] int h() const;
 
-    [[nodiscard]] bool operator!=(const Rect& r) const
-    {
-        return !(*this == r);
-    }
+    [[nodiscard]] const Point& pos() const;
+    [[nodiscard]] const Size& size() const;
 
-    [[nodiscard]] int x() const
-    {
-        return _x;
-    }
+    void setPos(Point pos);
+    void setSize(Size size);
 
-    [[nodiscard]] int y() const
-    {
-        return _y;
-    }
-
-    [[nodiscard]] int w() const
-    {
-        return _w;
-    }
-
-    [[nodiscard]] int h() const
-    {
-        return _h;
-    }
+    Rect& operator=(const Rect&) = default;
+    Rect& operator=(Rect&&) = default;
+    [[nodiscard]] bool operator==(const Rect& r) const;
+    [[nodiscard]] bool operator!=(const Rect& r) const;
 
 private:
-    int _x = 0;
-    int _y = 0;
-    int _w = 0;
-    int _h = 0;
+    Point _pos;
+    Size _size;
 };

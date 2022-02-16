@@ -29,6 +29,12 @@ add_executable(oled
     ${CMAKE_SOURCE_DIR}/src/Widgets/Point.h
     ${CMAKE_SOURCE_DIR}/src/Widgets/ProgressBar.cpp
     ${CMAKE_SOURCE_DIR}/src/Widgets/ProgressBar.h
+    ${CMAKE_SOURCE_DIR}/src/Widgets/Rect.cpp
+    ${CMAKE_SOURCE_DIR}/src/Widgets/Rect.h
+    ${CMAKE_SOURCE_DIR}/src/Widgets/Size.cpp
+    ${CMAKE_SOURCE_DIR}/src/Widgets/Size.h
+    ${CMAKE_SOURCE_DIR}/src/Widgets/Widget.cpp
+    ${CMAKE_SOURCE_DIR}/src/Widgets/Widget.h
 )
 
 # u8g2 library

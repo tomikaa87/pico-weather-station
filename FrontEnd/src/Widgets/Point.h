@@ -4,20 +4,17 @@ class Point
 {
 public:
     Point() = default;
-    Point(const int x, const int y)
-        : _x{ x }
-        , _y{ y }
-    {}
+    Point(const int x, const int y);
+    Point(const Point&) = default;
+    Point(Point&&) = default;
 
-    int x() const
-    {
-        return _x;
-    }
+    [[nodiscard]] int x() const;
+    [[nodiscard]] int y() const;
 
-    int y() const
-    {
-        return _y;
-    }
+    Point& operator=(const Point&) = default;
+    Point& operator=(Point&&) = default;
+    [[nodiscard]] bool operator==(const Point& p) const;
+    [[nodiscard]] bool operator!=(const Point& p) const;
 
 private:
     int _x = 0;

@@ -3,6 +3,7 @@
 
 #include "Widgets/Display.h"
 #include "Widgets/ProgressBar.h"
+#include "Widgets/Widget.h"
 
 #include <algorithm>
 #include <csignal>
@@ -126,13 +127,21 @@ int main()
     signal(SIGTERM, signalHandler);
     signal(SIGINT, signalHandler);
 
-    display.drawBitmap(
-        { 0, 0 },
-        Graphics::MainScreen_width,
-        Graphics::MainScreen_height,
-        Graphics::MainScreen_bits
-    );
-    display.drawText({ 20, 140 }, "It works!");
+    Widget w1{ "w1" };
+    w1.setRect({ 10, 10, 50, 50 });
+
+    Widget w1_1{ "w1_1", &w1 };
+    w1_1.setRect({ 1, 1, 10, 10 });
+
+    w1.paint(display);
+
+    // display.drawBitmap(
+    //     { 0, 0 },
+    //     Graphics::MainScreen_width,
+    //     Graphics::MainScreen_height,
+    //     Graphics::MainScreen_bits
+    // );
+    // display.drawText({ 20, 140 }, "It works!");
     display.update();
 
     // auto u8g2 = setup_display();
