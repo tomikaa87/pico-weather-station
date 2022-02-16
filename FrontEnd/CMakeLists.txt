@@ -11,13 +11,18 @@ set(WIRING_PI_DIR ${CMAKE_SOURCE_DIR}/dependencies/wiringpi)
 
 add_executable(oled
     ${CMAKE_SOURCE_DIR}/src/main.cpp
+    ${CMAKE_SOURCE_DIR}/src/Fonts.cpp
+    ${CMAKE_SOURCE_DIR}/src/Fonts.h
     ${CMAKE_SOURCE_DIR}/src/ProgressBar.cpp
     ${CMAKE_SOURCE_DIR}/src/ProgressBar.h
     ${CMAKE_SOURCE_DIR}/src/u8x8_d_st7586s_erc240160_chunked.c
 )
 
 # u8g2 library
-file(GLOB U8G2_CSOURCES "${U8G2_DIR}/csrc/*.c")
+file(GLOB U8G2_CSOURCES
+    "${U8G2_DIR}/csrc/*.c"
+    "${U8G2_DIR}/cppsrc/*.cpp"
+)
 add_library(u8g2 ${U8G2_CSOURCES})
 target_include_directories(u8g2
     PUBLIC
