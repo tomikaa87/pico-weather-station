@@ -1,0 +1,6 @@
+[submodule "FrontEnd/dependencies/u8g2"]
+	path = FrontEnd/dependencies/u8g2
+	url = https://github.com/olikraus/u8g2.git
+[submodule "FrontEnd/dependencies/wiringpi"]
+	path = FrontEnd/dependencies/wiringpi
+	url = https://github.com/WiringPi/WiringPi.git
