@@ -3,16 +3,19 @@ cmake_minimum_required(VERSION 3.18)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(U8G2_DIR ${CMAKE_SOURCE_DIR}/dependencies/u8g2)
 set(WIRING_PI_DIR ${CMAKE_SOURCE_DIR}/dependencies/wiringpi)
+set(FMT_DIR ${CMAKE_SOURCE_DIR}/dependencies/fmt)
 
 add_executable(oled
     ${CMAKE_SOURCE_DIR}/src/main.cpp
     ${CMAKE_SOURCE_DIR}/src/Fonts.cpp
     ${CMAKE_SOURCE_DIR}/src/Fonts.h
+    ${CMAKE_SOURCE_DIR}/src/Graphics.cpp
+    ${CMAKE_SOURCE_DIR}/src/Graphics.h
     ${CMAKE_SOURCE_DIR}/src/ProgressBar.cpp
     ${CMAKE_SOURCE_DIR}/src/ProgressBar.h
     ${CMAKE_SOURCE_DIR}/src/u8x8_d_st7586s_erc240160_chunked.c
@@ -42,8 +45,19 @@ target_link_libraries(wiringpi
         pthread
 )
 
+# FMT library
+add_library(fmt
+    ${FMT_DIR}/src/format.cc
+    ${FMT_DIR}/src/os.cc
+)
+target_include_directories(fmt
+    PUBLIC
+        ${FMT_DIR}/include
+)
+
 target_link_libraries(oled
     PRIVATE
+        fmt
         u8g2
         wiringpi
 )
