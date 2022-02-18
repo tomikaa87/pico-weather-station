@@ -25,6 +25,16 @@ int Size::height() const
     return _h;
 }
 
+void Size::setWidth(const int width)
+{
+    _w = width;
+}
+
+void Size::setHeight(const int height)
+{
+    _h = height;
+}
+
 bool Size::operator==(const Size& s) const
 {
     return

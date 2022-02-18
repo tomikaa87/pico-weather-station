@@ -91,6 +91,16 @@ int Display::calculateFontAscent() const
     return u8g2_GetAscent(&_p->u8g2);
 }
 
+int Display::calculateFontDescent() const
+{
+    return u8g2_GetDescent(&_p->u8g2);
+}
+
+int Display::calculateMaxCharHeight() const
+{
+    return u8g2_GetMaxCharHeight(&_p->u8g2);
+}
+
 void Display::drawText(const Point& pos, const std::string& s)
 {
     u8g2_DrawStr(&_p->u8g2, pos.x(), pos.y(), s.c_str());

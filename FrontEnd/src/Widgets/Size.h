@@ -14,6 +14,9 @@ public:
     [[nodiscard]] int width() const;
     [[nodiscard]] int height() const;
 
+    void setWidth(int width);
+    void setHeight(int height);
+
     Size& operator=(const Size&) = default;
     Size& operator=(Size&&) = default;
     [[nodiscard]] bool operator==(const Size& p) const;

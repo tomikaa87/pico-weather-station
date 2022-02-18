@@ -32,6 +32,8 @@ public:
     void resetClipRect();
 
     [[nodiscard]] int calculateFontAscent() const;
+    [[nodiscard]] int calculateFontDescent() const;
+    [[nodiscard]] int calculateMaxCharHeight() const;
 
     void drawText(const Point& pos, const std::string& s);
     void drawBitmap(const Point& pos, int width, int height, const uint8_t* data);

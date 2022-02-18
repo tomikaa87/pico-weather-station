@@ -64,11 +64,31 @@ void Widget::setSize(Size s)
     _parentNeedsRepaint = true;
 }
 
+void Widget::setWidth(const int width)
+{
+    _rect.setWidth(width);
+    _needsRepaint = true;
+    _parentNeedsRepaint = true;
+}
+
+void Widget::setHeight(const int height)
+{
+    _rect.setHeight(height);
+    _needsRepaint = true;
+    _parentNeedsRepaint = true;
+}
+
 void Widget::setRect(Rect r)
 {
     _rect = std::move(r);
     _needsRepaint = true;
     _parentNeedsRepaint = true;
+}
+
+void Widget::setBackgroundEnabled(const bool enabled)
+{
+    _backgroundEnabled = enabled;
+    _needsRepaint = true;
 }
 
 Point Widget::mapToGlobal(const Point& p) const

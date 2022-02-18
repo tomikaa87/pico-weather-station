@@ -189,6 +189,16 @@ void Rect::setSize(Size size)
     _size = std::move(size);
 }
 
+void Rect::setWidth(const int width)
+{
+    _size.setWidth(width);
+}
+
+void Rect::setHeight(const int height)
+{
+    _size.setHeight(height);
+}
+
 Rect Rect::adjusted(int dx1, int dy1, int dx2, int dy2) const
 {
     // TODO

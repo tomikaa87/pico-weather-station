@@ -33,7 +33,11 @@ public:
 
     void setPos(Point p);
     void setSize(Size s);
+    void setWidth(int width);
+    void setHeight(int height);
     void setRect(Rect rect);
+
+    void setBackgroundEnabled(bool enabled);
 
     Point mapToGlobal(const Point& p) const;
     Rect mapToGlobal(const Rect& r) const;
@@ -48,6 +52,7 @@ protected:
     Rect _rect;
     bool _needsRepaint = true;
     bool _parentNeedsRepaint = true;
+    bool _backgroundEnabled = true;
 
     virtual void paint();
 

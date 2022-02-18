@@ -144,7 +144,10 @@ int main()
     w1_1.setRect({ 1, 1, 10, 10 });
 
     Label l1{ "This is a label", &w1 };
-    l1.setRect({ 1, 12, 60, 10 });
+    l1.setPos({ 10, 22 });
+    l1.setWidth(100);
+    // l1.setFont(Font{ Font::Family::TinyNumbers });
+    // l1.setBackgroundEnabled(false);
 
     Image i1{ Graphics::MainScreen_bits, Graphics::MainScreen_width, Graphics::MainScreen_height, &w1 };
     i1.setPos({ 1, 22 });
@@ -154,9 +157,11 @@ int main()
     for (auto i = 0; i < 20; ++i) {
         // w1.setPos(w1.pos() + Point{ 1, 1 });
         if (i % 2 == 0)
-            l1.setText(fmt::format("Counter = {}", i));
+            l1.setText(fmt::format("ABCD {{[ijklypg Counter]}} = {}", i));
         painter.paintWidget(&screen);
     }
+
+    return 0;
 
     // display.drawBitmap(
     //     { 0, 0 },

@@ -25,6 +25,9 @@ public:
     void setPos(Point pos);
     void setSize(Size size);
 
+    void setWidth(int width);
+    void setHeight(int height);
+
     [[nodiscard]] Rect adjusted(int dx1, int dy1, int dx2, int dy2) const;
 
     Rect& operator=(const Rect&) = default;

@@ -24,8 +24,10 @@ void Painter::paintWidget(Widget* widget)
 
         if (w->_needsRepaint) {
             // Clear the background
-            w->_display->setDrawColor(Display::Color::White);
-            w->_display->fillRect(w->calculateClipRect());
+            if (w->_backgroundEnabled) {
+                w->_display->setDrawColor(Display::Color::White);
+                w->_display->fillRect(w->calculateClipRect());
+            }
 
             w->paint();
 
