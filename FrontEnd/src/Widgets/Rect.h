@@ -31,6 +31,8 @@ public:
     Rect& operator=(Rect&&) = default;
     [[nodiscard]] bool operator==(const Rect& r) const;
     [[nodiscard]] bool operator!=(const Rect& r) const;
+    [[nodiscard]] Rect operator&(const Rect& r) const;
+    [[nodiscard]] Rect operator|(const Rect& r) const;
 
 private:
     Point _pos;

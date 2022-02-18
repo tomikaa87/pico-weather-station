@@ -1,5 +1,6 @@
 #include "Rect.h"
 
+#include <algorithm>
 #include <utility>
 
 Rect::Rect(
@@ -35,6 +36,117 @@ bool Rect::operator==(const Rect& r) const
 bool Rect::operator!=(const Rect& r) const
 {
     return !(*this == r);
+}
+
+Rect Rect::operator&(const Rect& r) const
+{
+    int left1 = x();
+    int right1 = x();
+
+    if (w() < 0) {
+        left1 += w();
+    } else {
+        right1 += w();
+    }
+
+    if (left1 == right1) {
+        return {};
+    }
+
+    int left2 = r.x();
+    int right2 = r.x();
+
+    if (r.w() < 0) {
+        left2 += r.w();
+    } else {
+        right2 += r.w();
+    }
+
+    if (left2 == right2) {
+        return {};
+    }
+
+    int top1 = y();
+    int bottom1 = y();
+
+    if (h() < 0) {
+        top1 += h();
+    } else {
+        bottom1 += h();
+    }
+
+    if (top1 == bottom1) {
+        return {};
+    }
+
+    int top2 = r.y();
+    int bottom2 = r.y();
+
+    if (r.h() < 0) {
+        top2 += r.h();
+    } else {
+        bottom2 += r.h();
+    }
+
+    if (top2 == bottom2) {
+        return {};
+    }
+
+    return Rect{
+        std::max(left1, left2),
+        std::max(top1, top2),
+        std::min(right1, right2) - std::max(left1, left2),
+        std::min(bottom1, bottom2) - std::max(top1, top2)
+    };
+}
+
+Rect Rect::operator|(const Rect& r) const
+{
+    if (isNull()) {
+        return r;
+    }
+
+    if (r.isNull()) {
+        return *this;
+    }
+
+    int left = x();
+    int right = x();
+
+    if (w() < 0) {
+        left += w();
+    } else {
+        right += w();
+    }
+
+    if (r.w() < 0) {
+        left = std::min(left, r.x() + r.w());
+        right = std::max(right, r.x());
+    } else {
+        left = std::min(left, r.x());
+        right = std::max(right, r.x() + r.w());
+    }
+
+    int top = y();
+    int bottom = y();
+
+    if (h() < 0) {
+        top += h();
+    } else {
+        bottom += h();
+    }
+
+    if (r.h() < 0) {
+        top = std::min(top, r.y() + r.h());
+        bottom = std::max(bottom, r.y() + r.h());
+    }
+
+    return Rect{
+        left,
+        top,
+        right - left,
+        bottom - top
+    };
 }
 
 int Rect::x() const

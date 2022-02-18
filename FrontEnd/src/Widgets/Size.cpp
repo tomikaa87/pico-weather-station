@@ -10,6 +10,11 @@ bool Size::isNull() const
     return _w == 0 && _h == 0;
 }
 
+bool Size::isValid() const
+{
+    return _w > 0 && _h > 0;
+}
+
 int Size::width() const
 {
     return _w;

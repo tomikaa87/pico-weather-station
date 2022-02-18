@@ -13,13 +13,8 @@ Label::Label(std::string text, Widget* parent)
 
 void Label::paint() const
 {
-    const auto mappedRect = Rect{
-        mapToGlobal(pos()),
-        size()
-    };
-
     _display->setFont(_font);
-    _display->setClipRect(mappedRect);
+    _display->setClipRect(calculateClipRect());
 
     // TODO implement text rect calculation
 

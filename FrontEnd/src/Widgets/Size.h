@@ -9,6 +9,7 @@ public:
     Size(Size&&) = default;
 
     [[nodiscard]] bool isNull() const;
+    [[nodiscard]] bool isValid() const;
 
     [[nodiscard]] int width() const;
     [[nodiscard]] int height() const;

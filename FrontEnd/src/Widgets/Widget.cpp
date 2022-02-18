@@ -4,6 +4,10 @@
 
 #include <algorithm>
 
+#ifndef WIDGET_DEBUG
+#define WIDGET_DEBUG 0
+#endif
+
 Widget::Widget(Display* display)
     : _display{ display }
     , _parent{ nullptr }
@@ -74,6 +78,14 @@ Point Widget::mapToGlobal(const Point& p) const
     return mappedPoint;
 }
 
+Rect Widget::mapToGlobal(const Rect& r) const
+{
+    return Rect{
+        mapToGlobal(r.pos()),
+        r.size()
+    };
+}
+
 Point Widget::mapToParent(const Point& p) const
 {
     if (!_parent) {
@@ -83,6 +95,14 @@ Point Widget::mapToParent(const Point& p) const
     return Point{
         p.x() + _parent->pos().x(),
         p.y() + _parent->pos().y()
+    };
+}
+
+Rect Widget::mapToParent(const Rect& r) const
+{
+    return Rect{
+        mapToParent(r.pos()),
+        r.size()
     };
 }
 
@@ -99,7 +119,21 @@ void Widget::paint() const
         size()
     };
 
-    _display->setClipRect(mappedRect);
+#if WIDGET_DEBUG
+    _display->setClipRect(calculateClipRect());
     _display->drawRect(mappedRect);
     _display->resetClipRect();
+#endif
+}
+
+Rect Widget::calculateClipRect() const
+{
+    if (!_parent) {
+        return _rect;
+    }
+
+    const auto selfGlobalRect = mapToGlobal(_rect);
+    const auto parentGlobalRect = _parent->mapToGlobal(_parent->_rect);
+
+    return parentGlobalRect & selfGlobalRect;
 }

@@ -2,6 +2,7 @@
 #include "Graphics.h"
 
 #include "Widgets/Display.h"
+#include "Widgets/Image.h"
 #include "Widgets/Label.h"
 #include "Widgets/ProgressBar.h"
 #include "Widgets/Widget.h"
@@ -139,6 +140,9 @@ int main()
     Label l1{ "This is a label", &w1 };
     l1.setRect({ 1, 12, 40, 10 });
 
+    Image i1{ Graphics::MainScreen_bits, Graphics::MainScreen_width, Graphics::MainScreen_height, &w1 };
+    i1.setPos({ 1, 22 });
+
     w1.paint();
 
     // display.drawBitmap(
@@ -234,6 +238,8 @@ int main()
                 std::cout << "contrast=" << static_cast<int>(contrast) << '\n';
                 updateLabelOnly = true;
                 break;
+            case ' ':
+                return 0;
             default:
                 break;
         }

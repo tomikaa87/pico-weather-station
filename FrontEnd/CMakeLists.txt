@@ -22,6 +22,8 @@ add_executable(oled
     ${CMAKE_SOURCE_DIR}/src/Widgets/Display.h
     ${CMAKE_SOURCE_DIR}/src/Widgets/Font.cpp
     ${CMAKE_SOURCE_DIR}/src/Widgets/Font.h
+    ${CMAKE_SOURCE_DIR}/src/Widgets/Image.cpp
+    ${CMAKE_SOURCE_DIR}/src/Widgets/Image.h
     ${CMAKE_SOURCE_DIR}/src/Widgets/Label.cpp
     ${CMAKE_SOURCE_DIR}/src/Widgets/Label.h
     ${CMAKE_SOURCE_DIR}/src/Widgets/Rect.h
@@ -83,4 +85,5 @@ target_link_libraries(oled
 target_compile_definitions(oled
     PRIVATE
         RASPBERRY_PI
+        WIDGET_DEBUG
 )

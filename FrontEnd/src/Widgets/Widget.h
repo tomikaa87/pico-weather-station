@@ -33,7 +33,9 @@ public:
     void setRect(Rect rect);
 
     Point mapToGlobal(const Point& p) const;
+    Rect mapToGlobal(const Rect& r) const;
     Point mapToParent(const Point& p) const;
+    Rect mapToParent(const Rect& r) const;
 
     virtual void paint() const;
 
@@ -43,4 +45,6 @@ protected:
     std::string _name;
     std::vector<Widget*> _children;
     Rect _rect;
+
+    Rect calculateClipRect() const;
 };
