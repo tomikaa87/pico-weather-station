@@ -11,7 +11,9 @@ public:
     explicit Label(Widget* parent);
     Label(std::string text, Widget* parent);
 
-    virtual void paint() const override;
+    virtual void paint() override;
+
+    void setText(std::string text);
 
 private:
     std::string _text;

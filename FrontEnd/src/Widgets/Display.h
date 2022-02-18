@@ -15,8 +15,8 @@ public:
 
     enum class Color
     {
-        Black,
         White,
+        Black,
         Xor
     };
 
@@ -36,6 +36,8 @@ public:
     void drawText(const Point& pos, const std::string& s);
     void drawBitmap(const Point& pos, int width, int height, const uint8_t* data);
     void drawRect(const Rect& rect);
+
+    void fillRect(const Rect& rect);
 
 private:
     struct Private;

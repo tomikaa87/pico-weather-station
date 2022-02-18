@@ -4,6 +4,7 @@
 #include "Widgets/Display.h"
 #include "Widgets/Image.h"
 #include "Widgets/Label.h"
+#include "Widgets/Painter.h"
 #include "Widgets/ProgressBar.h"
 #include "Widgets/Widget.h"
 
@@ -129,21 +130,33 @@ int main()
     signal(SIGTERM, signalHandler);
     signal(SIGINT, signalHandler);
 
-    Widget w1{ &display };
+    display.clear();
+
+    Widget screen{ &display };
+    screen.setRect({ 0, 0, 240, 160 });
+
+    Widget w1{ &screen };
     w1.setName("w1");
-    w1.setRect({ 10, 10, 50, 50 });
+    w1.setRect({ 10, 10, 100, 100 });
 
     Widget w1_1{ &w1 };
     w1_1.setName("w1_1");
     w1_1.setRect({ 1, 1, 10, 10 });
 
     Label l1{ "This is a label", &w1 };
-    l1.setRect({ 1, 12, 40, 10 });
+    l1.setRect({ 1, 12, 60, 10 });
 
     Image i1{ Graphics::MainScreen_bits, Graphics::MainScreen_width, Graphics::MainScreen_height, &w1 };
     i1.setPos({ 1, 22 });
 
-    w1.paint();
+    Painter painter;
+
+    for (auto i = 0; i < 20; ++i) {
+        // w1.setPos(w1.pos() + Point{ 1, 1 });
+        l1.setText(fmt::format("Counter = {}", i));
+        painter.paintWidget(&screen);
+        display.update();
+    }
 
     // display.drawBitmap(
     //     { 0, 0 },
@@ -152,7 +165,6 @@ int main()
     //     Graphics::MainScreen_bits
     // );
     // display.drawText({ 20, 140 }, "It works!");
-    display.update();
 
     // auto u8g2 = setup_display();
     // g_u8g2 = &u8g2;

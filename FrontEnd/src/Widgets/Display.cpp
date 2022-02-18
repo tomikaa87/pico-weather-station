@@ -110,6 +110,11 @@ void Display::drawRect(const Rect& rect)
     u8g2_DrawFrame(&_p->u8g2, rect.x(), rect.y(), rect.w(), rect.h());
 }
 
+void Display::fillRect(const Rect& rect)
+{
+    u8g2_DrawBox(&_p->u8g2, rect.x(), rect.y(), rect.w(), rect.h());
+}
+
 void Display::setup()
 {
 #ifdef RASPBERRY_PI

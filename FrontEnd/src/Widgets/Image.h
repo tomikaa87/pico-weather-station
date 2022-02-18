@@ -23,7 +23,7 @@ public:
 
     [[nodiscard]] bool isNull() const;
 
-    void paint() const override;
+    void paint() override;
 
 private:
     const unsigned char* _imageData = nullptr;

@@ -42,13 +42,16 @@ bool Image::isNull() const
     return !_imageData || !_imageSize.isValid();
 }
 
-void Image::paint() const
+void Image::paint()
 {
+    std::cout << "Image::paint()\n";
+
     if (!isNull()) {
         const auto globalRect = mapToGlobal(_rect);
 
         _display->setClipRect(calculateClipRect());
 
+        _display->setDrawColor(Display::Color::Black);
         _display->drawBitmap(
             globalRect.pos(),
             globalRect.w(),

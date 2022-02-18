@@ -53,16 +53,22 @@ const Rect& Widget::rect() const
 void Widget::setPos(Point p)
 {
     _rect.setPos(std::move(p));
+    _needsRepaint = true;
+    _parentNeedsRepaint = true;
 }
 
 void Widget::setSize(Size s)
 {
     _rect.setSize(std::move(s));
+    _needsRepaint = true;
+    _parentNeedsRepaint = true;
 }
 
 void Widget::setRect(Rect r)
 {
     _rect = std::move(r);
+    _needsRepaint = true;
+    _parentNeedsRepaint = true;
 }
 
 Point Widget::mapToGlobal(const Point& p) const
@@ -106,22 +112,14 @@ Rect Widget::mapToParent(const Rect& r) const
     };
 }
 
-void Widget::paint() const
+void Widget::paint()
 {
-    for (auto child : _children) {
-        child->paint();
-    }
-
-    printf("Painter::paint: widget=%s\r\n", _name.c_str());
-
-    const auto mappedRect = Rect{
-        mapToGlobal(pos()),
-        size()
-    };
+    std::cout << "Widget::paint()\n";
 
 #if WIDGET_DEBUG
     _display->setClipRect(calculateClipRect());
-    _display->drawRect(mappedRect);
+    _display->setDrawColor(Display::Color::Black);
+    _display->drawRect(mapToGlobal(_rect));
     _display->resetClipRect();
 #endif
 }

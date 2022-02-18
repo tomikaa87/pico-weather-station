@@ -4,6 +4,7 @@
 #include "Rect.h"
 #include "Size.h"
 
+#include <iostream>
 #include <string>
 #include <vector>
 
@@ -11,6 +12,8 @@ class Display;
 
 class Widget
 {
+    friend class Painter;
+
 public:
     explicit Widget(Display* display);
     explicit Widget(Widget* parent);
@@ -37,14 +40,16 @@ public:
     Point mapToParent(const Point& p) const;
     Rect mapToParent(const Rect& r) const;
 
-    virtual void paint() const;
-
 protected:
     Display* const _display;
     Widget* const _parent;
     std::string _name;
     std::vector<Widget*> _children;
     Rect _rect;
+    bool _needsRepaint = true;
+    bool _parentNeedsRepaint = true;
+
+    virtual void paint();
 
     Rect calculateClipRect() const;
 };
