@@ -153,9 +153,9 @@ int main()
 
     for (auto i = 0; i < 20; ++i) {
         // w1.setPos(w1.pos() + Point{ 1, 1 });
-        l1.setText(fmt::format("Counter = {}", i));
+        if (i % 2 == 0)
+            l1.setText(fmt::format("Counter = {}", i));
         painter.paintWidget(&screen);
-        display.update();
     }
 
     // display.drawBitmap(

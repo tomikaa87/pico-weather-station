@@ -19,7 +19,9 @@ void Painter::paintWidget(Widget* widget)
         }
     };
 
-    static std::function<void (Widget*)> paintAllWidgets = [](Widget* w) {
+    static std::function<bool (Widget*)> paintAllWidgets = [](Widget* w) {
+        auto needsDisplayUpdate = false;
+
         if (w->_needsRepaint) {
             // Clear the background
             w->_display->setDrawColor(Display::Color::White);
@@ -28,13 +30,22 @@ void Painter::paintWidget(Widget* widget)
             w->paint();
 
             w->_needsRepaint = false;
+
+            needsDisplayUpdate = true;
         }
 
         for (auto* child : w->_children) {
-            paintAllWidgets(child);
+            needsDisplayUpdate |= paintAllWidgets(child);
         }
+
+        return needsDisplayUpdate;
     };
 
     updateRepaintFlags(widget);
-    paintAllWidgets(widget);
+
+    const auto needsDisplayUpdate = paintAllWidgets(widget);
+
+    if (needsDisplayUpdate) {
+        widget->_display->update();
+    }
 }
