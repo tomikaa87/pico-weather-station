@@ -59,4 +59,28 @@ namespace Fonts
         BBX Build Mode: 0
     */
     extern const uint8_t PfTempesta7CondensedBold[959];
+
+    /*
+        Fontname: RPGSystem
+        Copyright: Axel Lymphos <https://www.dafont.com/axel-lymphos.d5172?fpp=200>
+        Glyphs: 95/95
+        BBX Build Mode: 0
+    */
+    extern const uint8_t RpgSystem[1115];
+
+    /*
+        Fontname: _16x8Pxl_Sans
+        Copyright: Corne2Plum3 <https://www.dafont.com/corne2plum3.d7786?fpp=200>
+        Glyphs: 95/95
+        BBX Build Mode: 0
+    */
+    extern const uint8_t Pxl16x8[1513];
+
+    /*
+        Fontname: Pxl16x8_Sans_x2
+        Copyright: Corne2Plum3 <https://www.dafont.com/corne2plum3.d7786?fpp=200>
+        Glyphs: 95/95
+        BBX Build Mode: 0
+    */
+    extern const uint8_t Pxl16x8_x2[2563];
 }

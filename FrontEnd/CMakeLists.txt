@@ -20,6 +20,9 @@ add_executable(oled
     ${CMAKE_SOURCE_DIR}/src/Graphics.h
     ${CMAKE_SOURCE_DIR}/src/u8x8_d_st7586s_erc240160_chunked.c
 
+    ${CMAKE_SOURCE_DIR}/src/Screens/MainScreen.cpp
+    ${CMAKE_SOURCE_DIR}/src/Screens/MainScreen.h
+
     ${CMAKE_SOURCE_DIR}/src/Widgets/Display.cpp
     ${CMAKE_SOURCE_DIR}/src/Widgets/Display.h
     ${CMAKE_SOURCE_DIR}/src/Widgets/Font.cpp
@@ -87,5 +90,6 @@ target_link_libraries(oled
 target_compile_definitions(oled
     PRIVATE
         RASPBERRY_PI
-        WIDGET_DEBUG=1
+        DEBUG_WIDGET=1
+        DEBUG_PAINTER=1
 )

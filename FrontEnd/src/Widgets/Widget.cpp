@@ -4,11 +4,7 @@
 
 #include <algorithm>
 
-#ifndef WIDGET_DEBUG
-#define WIDGET_DEBUG 0
-#endif
-
-Widget::Widget(Display* display)
+Widget::Widget(Display* const display)
     : _display{ display }
     , _parent{ nullptr }
 {}
@@ -134,9 +130,7 @@ Rect Widget::mapToParent(const Rect& r) const
 
 void Widget::paint()
 {
-    std::cout << "Widget::paint()\n";
-
-#if WIDGET_DEBUG
+#if DEBUG_WIDGET
     _display->setClipRect(calculateClipRect());
     _display->setDrawColor(Display::Color::Black);
     _display->drawRect(mapToGlobal(_rect));

@@ -5,8 +5,8 @@
 #include <u8g2.h>
 
 Font::Font(
-    Family family = Family::PfTempesta7,
-    Style style = Style::Condensed
+    Family family,
+    Style style
 )
     : _family{ family }
     , _style{ style }
@@ -52,6 +52,18 @@ const uint8_t* Font::data() const
 
         case Family::P01Type:
             return u8g2_font_p01type_tn;
+
+        case Family::VcrOsd:
+            return u8g2_font_VCR_OSD_tr;
+
+        case Family::RpgSystem:
+            return Fonts::RpgSystem;
+
+        case Family::Pxl16x8:
+            return Fonts::Pxl16x8;
+
+        case Family::Pxl16x8_x2:
+            return Fonts::Pxl16x8_x2;
     }
 
     return nullptr;

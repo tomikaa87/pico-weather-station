@@ -3,6 +3,7 @@
 #include "Font.h"
 #include "Point.h"
 #include "Rect.h"
+#include "Size.h"
 
 #include <memory>
 #include <string>
@@ -20,6 +21,8 @@ public:
         Xor
     };
 
+    Size size() const;
+
     void clear();
     void clearBuffer();
 
@@ -34,6 +37,7 @@ public:
     [[nodiscard]] int calculateFontAscent() const;
     [[nodiscard]] int calculateFontDescent() const;
     [[nodiscard]] int calculateMaxCharHeight() const;
+    [[nodiscard]] int calculateTextWidth(const std::string& text) const;
 
     void drawText(const Point& pos, const std::string& s);
     void drawBitmap(const Point& pos, int width, int height, const uint8_t* data);

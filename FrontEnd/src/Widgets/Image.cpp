@@ -50,8 +50,6 @@ bool Image::isNull() const
 
 void Image::paint()
 {
-    std::cout << "Image::paint()\n";
-
     if (!isNull()) {
         const auto globalRect = mapToGlobal(_rect);
 

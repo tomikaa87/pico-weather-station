@@ -38,6 +38,14 @@ Display::Display()
 
 Display::~Display() = default;
 
+Size Display::size() const
+{
+    return {
+        u8g2_GetDisplayWidth(&_p->u8g2),
+        u8g2_GetDisplayHeight(&_p->u8g2)
+    };
+}
+
 void Display::clear()
 {
     u8g2_ClearDisplay(&_p->u8g2);
@@ -99,6 +107,11 @@ int Display::calculateFontDescent() const
 int Display::calculateMaxCharHeight() const
 {
     return u8g2_GetMaxCharHeight(&_p->u8g2);
+}
+
+int Display::calculateTextWidth(const std::string& text) const
+{
+    return u8g2_GetStrWidth(&_p->u8g2, text.c_str());
 }
 
 void Display::drawText(const Point& pos, const std::string& s)

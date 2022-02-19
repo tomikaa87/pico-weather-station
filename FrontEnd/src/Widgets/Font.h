@@ -8,7 +8,11 @@ public:
     enum class Family
     {
         PfTempesta7,
-        P01Type
+        P01Type,
+        VcrOsd,
+        RpgSystem,
+        Pxl16x8,
+        Pxl16x8_x2
     };
 
     enum class Style
@@ -20,7 +24,7 @@ public:
 
     Font() = default;
 
-    Font(Family family, Style style);
+    explicit Font(Family family, Style style = Style::Regular);
 
     void setFamily(Family family);
     void setStyle(Style style);

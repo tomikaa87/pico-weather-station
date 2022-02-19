@@ -3,26 +3,39 @@
 #include "Display.h"
 #include "Widget.h"
 
+#include <iostream>
 #include <functional>
 
 Painter::Painter()
 {}
 
-void Painter::paintWidget(Widget* widget)
+void Painter::paintWidget(Widget* const widget)
 {
+#if DEBUG_PAINTER
+    std::cout << __FUNCTION__ << ": widget=" << widget->_name << '\n';
+#endif
+
     updateWidgetRepaintFlags(widget);
 
     const auto needsDisplayUpdate = paintWidgetRecursive(widget);
 
     if (needsDisplayUpdate) {
+#if DEBUG_PAINTER
+        std::cout << __FUNCTION__ << ": updating display, widget=" << widget->_name << '\n';
+#endif
         widget->_display->update();
     }
 }
 
 void Painter::updateWidgetRepaintFlags(Widget* const w)
 {
+#if DEBUG_PAINTER
+    std::cout << __FUNCTION__ << ": widget=" << w->_name << '\n';
+#endif
+
     // Repaint parent if its child requests it (e.g geometry change)
     for (auto* child : w->_children) {
+        std::cout << __FUNCTION__ << ": widget=" << w->_name << '\n';
         w->_needsRepaint |= child->_parentNeedsRepaint;
         child->_parentNeedsRepaint = false;
     }
@@ -36,6 +49,10 @@ void Painter::updateWidgetRepaintFlags(Widget* const w)
 
 bool Painter::paintWidgetRecursive(Widget* const w)
 {
+#if DEBUG_PAINTER
+    std::cout << __FUNCTION__ << ": widget=" << w->_name << '\n';
+#endif
+
     auto needsDisplayUpdate = false;
 
     if (w->_needsRepaint) {
@@ -44,6 +61,14 @@ bool Painter::paintWidgetRecursive(Widget* const w)
             w->_display->setDrawColor(Display::Color::White);
             w->_display->fillRect(w->calculateClipRect());
         }
+
+#if DEBUG_PAINTER
+        std::cout << __FUNCTION__ <<
+            ": painting, widget=" << w->_name
+            << ", rect={" << w->_rect.x() << ';' << w->_rect.y() << ' '
+            << w->_rect.w() << 'x' << w->_rect.h() << '}'
+            << '\n';
+#endif
 
         w->paint();
 

@@ -16,9 +16,21 @@ public:
     void setText(std::string text);
     void setFont(const Font& font);
 
+    enum class Align
+    {
+        Left,
+        Center,
+        Right
+    };
+
+    void setAlignment(Align alignment);
+
 private:
     std::string _text;
     Font _font;
+    Align _alignment = Align::Left;
+    Point _textPos;
 
     void updateHeightByFont();
+    void updateTextPosition();
 };
