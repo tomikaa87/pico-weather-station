@@ -14,6 +14,8 @@ add_executable(oled
     ${CMAKE_SOURCE_DIR}/src/main.cpp
     ${CMAKE_SOURCE_DIR}/src/Fonts.cpp
     ${CMAKE_SOURCE_DIR}/src/Fonts.h
+    ${CMAKE_SOURCE_DIR}/src/Icons.cpp
+    ${CMAKE_SOURCE_DIR}/src/Icons.h
     ${CMAKE_SOURCE_DIR}/src/Graphics.cpp
     ${CMAKE_SOURCE_DIR}/src/Graphics.h
     ${CMAKE_SOURCE_DIR}/src/u8x8_d_st7586s_erc240160_chunked.c

@@ -1,5 +1,6 @@
 #include "Fonts.h"
 #include "Graphics.h"
+#include "Icons.h"
 
 #include "Widgets/Display.h"
 #include "Widgets/Image.h"
@@ -151,8 +152,14 @@ int main()
     l1.setFont(font);
     // l1.setBackgroundEnabled(false);
 
-    // Image i1{ Graphics::MainScreen_bits, Graphics::MainScreen_width, Graphics::MainScreen_height, &w1 };
-    // i1.setPos({ 1, 22 });
+    Image i1{
+        Graphics::Icons::Weather::Cloud,
+        Graphics::Icons::Weather::Width,
+        Graphics::Icons::Weather::Height,
+        &screen
+    };
+    i1.setRect({ 2, 30, 70, 70 });
+    // i1.setInverted(true);
 
     Painter painter;
 
@@ -160,6 +167,48 @@ int main()
         // w1.setPos(w1.pos() + Point{ 1, 1 });
         if (i % 2 == 0)
             l1.setText(fmt::format("ABCD {{[ijklypg Counter]}} = {}", i));
+        painter.paintWidget(&screen);
+    }
+
+    for (auto image : {
+        Graphics::Icons::Weather::Cloud,
+        Graphics::Icons::Weather::CloudsWithIceCubes,
+        Graphics::Icons::Weather::CloudsWithRaindrops,
+        Graphics::Icons::Weather::CloudsWithRaindropsAndIceCubes,
+        Graphics::Icons::Weather::CloudsWithRaindropsAndSnowflakes,
+        Graphics::Icons::Weather::CloudsWithSleet,
+        Graphics::Icons::Weather::CloudsWithSnowflakes,
+        Graphics::Icons::Weather::CloudWithRaindrops,
+        Graphics::Icons::Weather::CloudWithSnowflakes,
+        Graphics::Icons::Weather::CloudWithThunderbolt,
+        Graphics::Icons::Weather::Fire,
+        Graphics::Icons::Weather::Fog,
+        Graphics::Icons::Weather::Moon,
+        Graphics::Icons::Weather::MoonWithCloud,
+        Graphics::Icons::Weather::MoonWithCloudAndRaindrops,
+        Graphics::Icons::Weather::MoonWithCloudAndSnowflakes,
+        Graphics::Icons::Weather::MoonWithCloudAndThunderbolt,
+        Graphics::Icons::Weather::MoonWithClouds,
+        Graphics::Icons::Weather::MoonWithCloudsAndRaindrops,
+        Graphics::Icons::Weather::MoonWithCloudsAndSnowflakes,
+        Graphics::Icons::Weather::MoonWithCloudsAndThunderbolt,
+        Graphics::Icons::Weather::MoonWithMoreClouds,
+        Graphics::Icons::Weather::QuestionMark,
+        Graphics::Icons::Weather::Snowflake,
+        Graphics::Icons::Weather::Sun,
+        Graphics::Icons::Weather::SunHot,
+        Graphics::Icons::Weather::SunWithCloud,
+        Graphics::Icons::Weather::SunWithCloudAndRaindrops,
+        Graphics::Icons::Weather::SunWithCloudAndSnowflakes,
+        Graphics::Icons::Weather::SunWithCloudAndThunderbolt,
+        Graphics::Icons::Weather::SunWithClouds,
+        Graphics::Icons::Weather::SunWithCloudsAndRaindrops,
+        Graphics::Icons::Weather::SunWithCloudsAndSnowflakes,
+        Graphics::Icons::Weather::SunWithCloudsAndThunderbolt,
+        Graphics::Icons::Weather::SunWithMoreClouds,
+        Graphics::Icons::Weather::Whirlpools
+    }) {
+        i1.setImage(image, 70, 70);
         painter.paintWidget(&screen);
     }
 
