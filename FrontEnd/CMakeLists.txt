@@ -90,6 +90,6 @@ target_link_libraries(oled
 target_compile_definitions(oled
     PRIVATE
         RASPBERRY_PI
-        DEBUG_WIDGET=1
+        DEBUG_WIDGET=0
         DEBUG_PAINTER=1
 )

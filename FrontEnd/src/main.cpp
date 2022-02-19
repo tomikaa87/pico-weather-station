@@ -135,7 +135,15 @@ int main()
 
     display.clear();
 
+#if 0
     MainScreen mainScreen{ &display };
+#else
+    Widget mainScreen{ &display };
+    mainScreen.setRect({ 0, 0, 240, 160 });
+    Image mainScreenImage{ &mainScreen };
+    mainScreenImage.setRect({ 0, 0, 240, 160 });
+    mainScreenImage.setImage(Graphics::MainScreenTest, 240, 160);
+#endif
 
     Painter painter;
     painter.paintWidget(&mainScreen);
