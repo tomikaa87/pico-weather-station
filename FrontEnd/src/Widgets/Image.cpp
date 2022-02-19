@@ -32,6 +32,12 @@ void Image::setImage(
     setSize(_imageSize);
 }
 
+void Image::setInverted(const bool inverted)
+{
+    _inverted = inverted;
+    _needsRepaint = true;
+}
+
 Size Image::imageSize() const
 {
     return _imageSize;
@@ -51,7 +57,12 @@ void Image::paint()
 
         _display->setClipRect(calculateClipRect());
 
-        _display->setDrawColor(Display::Color::Black);
+        _display->setDrawColor(
+            _inverted
+                ? Display::Color::White
+                : Display::Color::Black
+        );
+
         _display->drawBitmap(
             globalRect.pos(),
             globalRect.w(),

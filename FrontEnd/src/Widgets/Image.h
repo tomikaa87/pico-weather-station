@@ -19,6 +19,8 @@ public:
         int height
     );
 
+    void setInverted(bool inverted);
+
     [[nodiscard]] Size imageSize() const;
 
     [[nodiscard]] bool isNull() const;
@@ -28,4 +30,5 @@ public:
 private:
     const unsigned char* _imageData = nullptr;
     Size _imageSize;
+    bool _inverted = false;
 };
