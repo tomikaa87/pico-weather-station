@@ -135,6 +135,7 @@ int main()
 
     Widget screen{ &display };
     screen.setRect({ 0, 0, 240, 160 });
+    screen.setName("screen");
 
     // Widget w1{ &screen };
     // w1.setName("w1");
@@ -150,6 +151,7 @@ int main()
     Font font{ Font::Family::PfTempesta7, Font::Style::Compressed };
     font.setBold(true);
     l1.setFont(font);
+    l1.setName("label1");
     // l1.setBackgroundEnabled(false);
 
     Image i1{
@@ -159,6 +161,7 @@ int main()
         &screen
     };
     i1.setRect({ 2, 30, 70, 70 });
+    i1.setName("image1");
     // i1.setInverted(true);
 
     Painter painter;
