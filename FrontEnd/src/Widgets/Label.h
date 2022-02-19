@@ -25,11 +25,20 @@ public:
 
     void setAlignment(Align alignment);
 
+    enum class HeightCalculation
+    {
+        WithDescent,
+        NoDescent
+    };
+
+    void setHeightCalculation(HeightCalculation heightCalculation);
+
 private:
     std::string _text;
     Font _font;
     Align _alignment = Align::Left;
     Point _textPos;
+    HeightCalculation _heightCalculation = HeightCalculation::WithDescent;
 
     void updateHeightByFont();
     void updateTextPosition();

@@ -24,7 +24,10 @@ public:
 
     Font() = default;
 
-    explicit Font(Family family, Style style = Style::Regular);
+    explicit Font(
+        Family family,
+        Style style = Style::Regular
+    );
 
     void setFamily(Family family);
     void setStyle(Style style);

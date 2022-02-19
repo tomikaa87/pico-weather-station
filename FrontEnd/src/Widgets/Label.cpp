@@ -34,6 +34,12 @@ void Label::setAlignment(const Align alignment)
     updateTextPosition();
 }
 
+void Label::setHeightCalculation(const HeightCalculation heightCalculation)
+{
+    _heightCalculation = heightCalculation;
+    updateHeightByFont();
+}
+
 void Label::paint()
 {
     _display->setDrawColor(Display::Color::Black);
@@ -51,7 +57,16 @@ void Label::updateHeightByFont()
 {
     _needsRepaint = true;
     _display->setFont(_font);
-    setHeight(_display->calculateMaxCharHeight() + 1);
+
+    switch (_heightCalculation) {
+        case HeightCalculation::NoDescent:
+            setHeight(_display->calculateFontAscent());
+            break;
+
+        case HeightCalculation::WithDescent:
+            setHeight(_display->calculateMaxCharHeight() + 1);
+            break;
+    }
 }
 
 void Label::updateTextPosition()
