@@ -135,22 +135,24 @@ int main()
     Widget screen{ &display };
     screen.setRect({ 0, 0, 240, 160 });
 
-    Widget w1{ &screen };
-    w1.setName("w1");
-    w1.setRect({ 10, 10, 100, 100 });
+    // Widget w1{ &screen };
+    // w1.setName("w1");
+    // w1.setRect({ 10, 10, 100, 100 });
 
-    Widget w1_1{ &w1 };
-    w1_1.setName("w1_1");
-    w1_1.setRect({ 1, 1, 10, 10 });
+    // Widget w1_1{ &w1 };
+    // w1_1.setName("w1_1");
+    // w1_1.setRect({ 1, 1, 10, 10 });
 
-    Label l1{ "This is a label", &w1 };
-    l1.setPos({ 10, 22 });
+    Label l1{ "This is a label", &screen };
+    l1.setPos({ 2, 2 });
     l1.setWidth(100);
-    // l1.setFont(Font{ Font::Family::TinyNumbers });
+    Font font{ Font::Family::PfTempesta7, Font::Style::Compressed };
+    font.setBold(true);
+    l1.setFont(font);
     // l1.setBackgroundEnabled(false);
 
-    Image i1{ Graphics::MainScreen_bits, Graphics::MainScreen_width, Graphics::MainScreen_height, &w1 };
-    i1.setPos({ 1, 22 });
+    // Image i1{ Graphics::MainScreen_bits, Graphics::MainScreen_width, Graphics::MainScreen_height, &w1 };
+    // i1.setPos({ 1, 22 });
 
     Painter painter;
 

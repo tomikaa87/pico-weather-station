@@ -33,7 +33,7 @@ Display::Display()
     : _p{ std::make_unique<Private>() }
 {
     setup();
-    setFont(Font{ Font::Family::NormalText });
+    setFont(Font{});
 }
 
 Display::~Display() = default;

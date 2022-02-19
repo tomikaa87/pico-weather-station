@@ -7,17 +7,29 @@ class Font
 public:
     enum class Family
     {
-        NormalText,
-        TinyNumbers
+        PfTempesta7,
+        P01Type
+    };
+
+    enum class Style
+    {
+        Regular,
+        Condensed,
+        Compressed
     };
 
     Font() = default;
-    explicit Font(Family family);
+
+    Font(Family family, Style style);
 
     void setFamily(Family family);
+    void setStyle(Style style);
+    void setBold(bool bold);
 
     const uint8_t* data() const;
 
 private:
-    Family _family = Family::NormalText;
+    Family _family = Family::PfTempesta7;
+    Style _style = Style::Condensed;
+    bool _bold = false;
 };
