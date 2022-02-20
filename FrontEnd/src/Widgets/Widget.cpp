@@ -131,10 +131,10 @@ Rect Widget::mapToParent(const Rect& r) const
 void Widget::paint()
 {
 #if DEBUG_WIDGET
-    _display->setClipRect(calculateClipRect());
+    // _display->setClipRect(calculateClipRect());
     _display->setDrawColor(Display::Color::Black);
     _display->drawRect(mapToGlobal(_rect));
-    _display->resetClipRect();
+    // _display->resetClipRect();
 #endif
 }
 

@@ -53,7 +53,7 @@ void Image::paint()
     if (!isNull()) {
         const auto globalRect = mapToGlobal(_rect);
 
-        _display->setClipRect(calculateClipRect());
+        // _display->setClipRect(calculateClipRect());
 
         _display->setDrawColor(
             _inverted
@@ -68,7 +68,7 @@ void Image::paint()
             reinterpret_cast<const uint8_t*>(_imageData)
         );
 
-        _display->resetClipRect();
+        // _display->resetClipRect();
     }
 
     Widget::paint();

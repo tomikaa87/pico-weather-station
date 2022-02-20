@@ -83,4 +83,20 @@ namespace Fonts
         BBX Build Mode: 0
     */
     extern const uint8_t Pxl16x8_x2[2563];
+
+    /*
+        Fontname: Pxl16x8_Mono
+        Copyright: Corne2Plum3 <https://www.dafont.com/corne2plum3.d7786?fpp=200>
+        Glyphs: 95/95
+        BBX Build Mode: 0
+    */
+    extern const uint8_t Pxl16x8_Mono[2213];
+
+    /*
+        Fontname: Pxl16x8_Mono_x2
+        Copyright: Corne2Plum3 <https://www.dafont.com/corne2plum3.d7786?fpp=200>
+        Glyphs: 95/95
+        BBX Build Mode: 0
+    */
+    extern const uint8_t Pxl16x8_Mono_x2[4093];
 }

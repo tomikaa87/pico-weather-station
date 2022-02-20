@@ -12,14 +12,18 @@
 #include "Widgets/Widget.h"
 
 #include <algorithm>
+#include <chrono>
 #include <csignal>
 #include <iostream>
 #include <string>
+#include <thread>
 
 #include <unistd.h>
 #include <termios.h>
 
 #include <fmt/core.h>
+
+using namespace std::chrono_literals;
 
 static Display display;
 
@@ -135,8 +139,11 @@ int main()
 
     display.clear();
 
-#if 0
+#if 1
     MainScreen mainScreen{ &display };
+    mainScreen.setCurrentTemperature(-88);
+    mainScreen.setCurrentSensorTemperature(-88);
+    mainScreen.setCurrentPressure(8888);
 #else
     Widget mainScreen{ &display };
     mainScreen.setRect({ 0, 0, 240, 160 });
@@ -146,7 +153,27 @@ int main()
 #endif
 
     Painter painter;
-    painter.paintWidget(&mainScreen);
+
+    int temperature = -99;
+    int pressure = 1000;
+
+    while (true) {
+        mainScreen.setCurrentTemperature(temperature);
+        mainScreen.setCurrentSensorTemperature(temperature);
+        mainScreen.setCurrentPressure(pressure);
+
+        painter.paintWidget(&mainScreen);
+
+        if (++temperature > 99) {
+            temperature = -99;
+        }
+
+        if (++pressure > 1030) {
+            pressure = 980;
+        }
+
+        std::this_thread::sleep_for(500ms);
+    }
 
     return 0;
 

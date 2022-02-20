@@ -25,6 +25,8 @@ void Painter::paintWidget(Widget* const widget)
 #endif
         widget->_display->update();
     }
+
+    widget->_display->resetClipRect();
 }
 
 void Painter::updateWidgetRepaintFlags(Widget* const w)
@@ -56,10 +58,13 @@ bool Painter::paintWidgetRecursive(Widget* const w)
     auto needsDisplayUpdate = false;
 
     if (w->_needsRepaint) {
+        const auto clipRect = w->calculateClipRect();
+        w->_display->setClipRect(clipRect);
+
         // Clear the background
         if (w->_backgroundEnabled) {
             w->_display->setDrawColor(Display::Color::White);
-            w->_display->fillRect(w->calculateClipRect());
+            w->_display->fillRect(clipRect);
         }
 
 #if DEBUG_PAINTER
@@ -67,6 +72,7 @@ bool Painter::paintWidgetRecursive(Widget* const w)
             ": painting, widget=" << w->_name
             << ", rect={" << w->_rect.x() << ';' << w->_rect.y() << ' '
             << w->_rect.w() << 'x' << w->_rect.h() << '}'
+            << ", backgroundEnabled=" << w->_backgroundEnabled
             << '\n';
 #endif
 

@@ -4,7 +4,10 @@ namespace Graphics
 {
     using ImageData = const unsigned char;
 
-    constexpr auto MainScreenTestWidth = 240;
-    constexpr auto MainScreenTestHeight = 160;
+    constexpr auto MainScreenWidth = 240;
+    constexpr auto MainScreenHeight = 160;
+
     extern ImageData MainScreenTest[];
+
+    extern ImageData MainScreenBackground[];
 }

@@ -44,11 +44,11 @@ void Label::paint()
 {
     _display->setDrawColor(Display::Color::Black);
     _display->setFont(_font);
-    _display->setClipRect(calculateClipRect());
+    // _display->setClipRect(calculateClipRect());
 
     _display->drawText(_textPos, _text);
 
-    _display->resetClipRect();
+    // _display->resetClipRect();
 
     Widget::paint();
 }
