@@ -144,6 +144,9 @@ int main()
     mainScreen.setCurrentTemperature(-88);
     mainScreen.setCurrentSensorTemperature(-88);
     mainScreen.setCurrentPressure(8888);
+    mainScreen.setCurrentHumidity(888);
+    mainScreen.setCurrentWindSpeed(888);
+    mainScreen.setCurrentWindGustSpeed(818);
 #else
     Widget mainScreen{ &display };
     mainScreen.setRect({ 0, 0, 240, 160 });
@@ -153,23 +156,39 @@ int main()
 #endif
 
     Painter painter;
+    painter.paintWidget(&mainScreen);
 
-    int temperature = -99;
+    // return 0;
+
+    int temperature = -30;
     int pressure = 1000;
+    int humidity = 50;
+    int windSpeed = 50;
 
     while (true) {
         mainScreen.setCurrentTemperature(temperature);
         mainScreen.setCurrentSensorTemperature(temperature);
         mainScreen.setCurrentPressure(pressure);
+        mainScreen.setCurrentHumidity(humidity);
+        mainScreen.setCurrentWindSpeed(windSpeed);
+        mainScreen.setCurrentWindGustSpeed(windSpeed);
 
         painter.paintWidget(&mainScreen);
 
-        if (++temperature > 99) {
-            temperature = -99;
+        if (++temperature > 30) {
+            temperature = -30;
         }
 
         if (++pressure > 1030) {
             pressure = 980;
+        }
+
+        if (++humidity > 100) {
+            humidity = 0;
+        }
+
+        if (++windSpeed > 120) {
+            windSpeed = 0;
         }
 
         std::this_thread::sleep_for(500ms);

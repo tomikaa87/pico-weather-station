@@ -1,106 +1,8 @@
 #include "Rect.h"
 
-#include <algorithm>
-#include <utility>
+#include "Utils.h"
 
-Rect::Rect(
-    const int x,
-    const int y,
-    const int w,
-    const int h
-)
-    : _pos{ x, y }
-    , _size{ w, h }
-{}
-
-Rect::Rect(
-    Point pos,
-    Size size
-)
-    : _pos{ std::move(pos) }
-    , _size{ std::move(size) }
-{}
-
-bool Rect::isNull() const
-{
-    return _size.isNull();
-}
-
-bool Rect::operator==(const Rect& r) const
-{
-    return
-        _pos == r.pos()
-        && _size == r.size();
-}
-
-bool Rect::operator!=(const Rect& r) const
-{
-    return !(*this == r);
-}
-
-Rect Rect::operator&(const Rect& r) const
-{
-    int left1 = x();
-    int right1 = x();
-
-    if (w() < 0) {
-        left1 += w();
-    } else {
-        right1 += w();
-    }
-
-    if (left1 == right1) {
-        return {};
-    }
-
-    int left2 = r.x();
-    int right2 = r.x();
-
-    if (r.w() < 0) {
-        left2 += r.w();
-    } else {
-        right2 += r.w();
-    }
-
-    if (left2 == right2) {
-        return {};
-    }
-
-    int top1 = y();
-    int bottom1 = y();
-
-    if (h() < 0) {
-        top1 += h();
-    } else {
-        bottom1 += h();
-    }
-
-    if (top1 == bottom1) {
-        return {};
-    }
-
-    int top2 = r.y();
-    int bottom2 = r.y();
-
-    if (r.h() < 0) {
-        top2 += r.h();
-    } else {
-        bottom2 += r.h();
-    }
-
-    if (top2 == bottom2) {
-        return {};
-    }
-
-    return Rect{
-        std::max(left1, left2),
-        std::max(top1, top2),
-        std::min(right1, right2) - std::max(left1, left2),
-        std::min(bottom1, bottom2) - std::max(top1, top2)
-    };
-}
-
-Rect Rect::operator|(const Rect& r) const
+Rect Rect::operator|(const Rect& r) const noexcept
 {
     if (isNull()) {
         return r;
@@ -110,97 +12,101 @@ Rect Rect::operator|(const Rect& r) const
         return *this;
     }
 
-    int left = x();
-    int right = x();
+    int l1 = _x1;
+    int r1 = _x1 - 1;
+    if (_x2 < _x1 - 1)
+        l1 = _x2 + 1;
+    else
+        r1 = _x2;
 
-    if (w() < 0) {
-        left += w();
-    } else {
-        right += w();
+    int l2 = r._x1;
+    int r2 = r._x1 - 1;
+    if (r._x2 < r._x1 - 1)
+        l2 = r._x2 + 1;
+    else
+        r2 = r._x2;
+
+    int t1 = _y1;
+    int b1 = _y1 - 1;
+    if (_y2 < _y1 - 1)
+        t1 = _y2 + 1;
+    else
+        b1 = _y2;
+
+    int t2 = r._y1;
+    int b2 = r._y1 - 1;
+    if (r._y2 < r._y1 - 1)
+        t2 = r._y2 + 1;
+    else
+        b2 = r._y2;
+
+    Rect tmp;
+    tmp._x1 = Utils::min(l1, l2);
+    tmp._x2 = Utils::max(r1, r2);
+    tmp._y1 = Utils::min(t1, t2);
+    tmp._y2 = Utils::max(b1, b2);
+
+    return tmp;
+}
+
+Rect Rect::operator&(const Rect& r) const noexcept
+{
+    if (isNull() || r.isNull()) {
+        return Rect{};
     }
 
-    if (r.w() < 0) {
-        left = std::min(left, r.x() + r.w());
-        right = std::max(right, r.x());
-    } else {
-        left = std::min(left, r.x());
-        right = std::max(right, r.x() + r.w());
+    int l1 = _x1;
+    int r1 = _x2;
+    if (_x2 < _x1 - 1) {
+        l1 = _x2 + 1;
+        r1 = _x1 - 1;
     }
 
-    int top = y();
-    int bottom = y();
-
-    if (h() < 0) {
-        top += h();
-    } else {
-        bottom += h();
+    int l2 = r._x1;
+    int r2 = r._x2;
+    if (r._x2 < r._x1 - 1) {
+        l2 = r._x2 + 1;
+        r2 = r._x1 - 1;
     }
 
-    if (r.h() < 0) {
-        top = std::min(top, r.y() + r.h());
-        bottom = std::max(bottom, r.y() + r.h());
+    if (l1 > r2 || l2 > r1) {
+        return Rect{};
     }
 
-    return Rect{
-        left,
-        top,
-        right - left,
-        bottom - top
-    };
+    int t1 = _y1;
+    int b1 = _y2;
+    if (_y2 < _y1 - 1) {
+        t1 = _y2 + 1;
+        b1 = _y1 - 1;
+    }
+
+    int t2 = r._y1;
+    int b2 = r._y2;
+    if (r._y2 < r._y1 - 1) {
+        t2 = r._y2 + 1;
+        b2 = r._y1 - 1;
+    }
+
+    if (t1 > b2 || t2 > b1) {
+        return Rect{};
+    }
+
+    Rect tmp;
+    tmp._x1 = Utils::max(l1, l2);
+    tmp._x2 = Utils::min(r1, r2);
+    tmp._y1 = Utils::max(t1, t2);
+    tmp._y2 = Utils::min(b1, b2);
+
+    return tmp;
 }
 
-int Rect::x() const
+std::ostream& operator<<(std::ostream& os, const Rect& r)
 {
-    return _pos.x();
-}
+    os << '{'
+        << r.x() << ';' << r.y()
+        << ' '
+        << r.width() << 'x' << r.height()
+        << '}';
 
-int Rect::y() const
-{
-    return _pos.y();
-}
-
-int Rect::w() const
-{
-    return _size.width();
-}
-
-int Rect::h() const
-{
-    return _size.height();
-}
-
-const Point& Rect::pos() const
-{
-    return _pos;
-}
-
-const Size& Rect::size() const
-{
-    return _size;
-}
-
-void Rect::setPos(Point pos)
-{
-    _pos = std::move(pos);
-}
-
-void Rect::setSize(Size size)
-{
-    _size = std::move(size);
-}
-
-void Rect::setWidth(const int width)
-{
-    _size.setWidth(width);
-}
-
-void Rect::setHeight(const int height)
-{
-    _size.setHeight(height);
-}
-
-Rect Rect::adjusted(int dx1, int dy1, int dx2, int dy2) const
-{
-    // TODO
-    return{};
+    return os;
 }

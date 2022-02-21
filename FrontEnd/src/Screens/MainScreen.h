@@ -14,6 +14,9 @@ public:
     void setCurrentTemperature(int value);
     void setCurrentSensorTemperature(int value);
     void setCurrentPressure(int value);
+    void setCurrentHumidity(int value);
+    void setCurrentWindSpeed(int value);
+    void setCurrentWindGustSpeed(int value);
 
 protected:
     void paint() override;
@@ -23,6 +26,13 @@ private:
     Label _currentTemperatureLabel;
     Label _currentSensorTempLabel;
     Label _currentPressureLabel;
+    Label _currentHumidityLabel;
+    Label _currentWindSpeedLabel;
+    Label _currentWindGustSpeedLabel;
+
+    Label _clockHoursLabel;
+    Label _clockMinutesLabel;
+    Label _clockDateLabel;
 
     void setupLayout();
     void setWeatherIcon();
@@ -33,6 +43,11 @@ private:
     );
 
     static void setupMediumNumberLabel(
+        Label& label,
+        Rect rect
+    );
+
+    static void setupSmallNumberLabel(
         Label& label,
         Rect rect
     );

@@ -5,12 +5,20 @@
 namespace Fonts
 {
     /*
-        Fontname: Bit Cell 25
+        Fontname: Bit Cell
         Copyright: Aaron D. Chand <https://www.dafont.com/aaron-d-chand.d6569>
         Glyphs: 95/95
         BBX Build Mode: 0
     */
-    extern const uint8_t BitCell25[1392];
+    extern const uint8_t BitCell[938];
+
+    /*
+        Fontname: Bit Cell
+        Copyright: (c) 2018 memesbruh03 (https://memesbruh03.neocities.org/)
+        Glyphs: 95/224
+        BBX Build Mode: 2
+    */
+    extern const uint8_t BitCellMonoNumbers[];
 
     /*
         Fontname: PfTempesta7Condensed

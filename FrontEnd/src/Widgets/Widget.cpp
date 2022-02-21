@@ -31,24 +31,9 @@ void Widget::setName(std::string name)
     _name = std::move(name);
 }
 
-const Point& Widget::pos() const
-{
-    return _rect.pos();
-}
-
-const Size& Widget::size() const
-{
-    return _rect.size();
-}
-
-const Rect& Widget::rect() const
-{
-    return _rect;
-}
-
 void Widget::setPos(Point p)
 {
-    _rect.setPos(std::move(p));
+    _rect.moveTopLeft(std::move(p));
     _needsRepaint = true;
     _parentNeedsRepaint = true;
 }
@@ -103,7 +88,7 @@ Point Widget::mapToGlobal(const Point& p) const
 Rect Widget::mapToGlobal(const Rect& r) const
 {
     return Rect{
-        mapToGlobal(r.pos()),
+        mapToGlobal(r.topLeft()),
         r.size()
     };
 }
@@ -123,7 +108,7 @@ Point Widget::mapToParent(const Point& p) const
 Rect Widget::mapToParent(const Rect& r) const
 {
     return Rect{
-        mapToParent(r.pos()),
+        mapToParent(r.topLeft()),
         r.size()
     };
 }

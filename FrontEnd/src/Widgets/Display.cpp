@@ -84,8 +84,8 @@ void Display::setClipRect(const Rect& rect)
         &_p->u8g2,
         rect.x(),
         rect.y(),
-        rect.x() + rect.w(),
-        rect.y() + rect.h()
+        rect.x() + rect.width(),
+        rect.y() + rect.height()
     );
 }
 
@@ -130,12 +130,12 @@ void Display::drawBitmap(
 
 void Display::drawRect(const Rect& rect)
 {
-    u8g2_DrawFrame(&_p->u8g2, rect.x(), rect.y(), rect.w(), rect.h());
+    u8g2_DrawFrame(&_p->u8g2, rect.x(), rect.y(), rect.width(), rect.height());
 }
 
 void Display::fillRect(const Rect& rect)
 {
-    u8g2_DrawBox(&_p->u8g2, rect.x(), rect.y(), rect.w(), rect.h());
+    u8g2_DrawBox(&_p->u8g2, rect.x(), rect.y(), rect.width(), rect.height());
 }
 
 void Display::setup()
@@ -487,7 +487,7 @@ uint8_t u8x8_byte_wiringpi_hw_spi(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, vo
             break;
 
         case U8X8_MSG_BYTE_INIT: {
-            const auto result = wiringPiSPISetup(0, 64000000);
+            const auto result = wiringPiSPISetup(0, 48000000);
             if (result < 0) {
                 std::cout << "Failed to initialize SPI\n";
             }

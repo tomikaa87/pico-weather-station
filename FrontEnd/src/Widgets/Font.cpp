@@ -70,6 +70,12 @@ const uint8_t* Font::data() const
 
         case Family::Pxl16x8_Mono_x2:
             return Fonts::Pxl16x8_Mono_x2;
+
+        case Family::BitCell:
+            return Fonts::BitCell;
+
+        case Family::BitCellMonoNumbers:
+            return Fonts::BitCellMonoNumbers;
     }
 
     return nullptr;

@@ -27,9 +27,20 @@ public:
 
     void setName(std::string name);
 
-    const Point& pos() const;
-    const Size& size() const;
-    const Rect& rect() const;
+    const inline Point pos() const
+    {
+        return _rect.topLeft();
+    }
+
+    const inline Size size() const
+    {
+        return _rect.size();
+    }
+
+    const inline Rect& rect() const
+    {
+        return _rect;
+    }
 
     void setPos(Point p);
     void setSize(Size s);

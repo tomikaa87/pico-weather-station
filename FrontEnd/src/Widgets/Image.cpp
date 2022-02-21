@@ -62,9 +62,9 @@ void Image::paint()
         );
 
         _display->drawBitmap(
-            globalRect.pos(),
-            globalRect.w(),
-            globalRect.h(),
+            globalRect.topLeft(),
+            globalRect.width(),
+            globalRect.height(),
             reinterpret_cast<const uint8_t*>(_imageData)
         );
 

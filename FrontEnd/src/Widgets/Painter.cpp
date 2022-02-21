@@ -70,8 +70,8 @@ bool Painter::paintWidgetRecursive(Widget* const w)
 #if DEBUG_PAINTER
         std::cout << __FUNCTION__ <<
             ": painting, widget=" << w->_name
-            << ", rect={" << w->_rect.x() << ';' << w->_rect.y() << ' '
-            << w->_rect.w() << 'x' << w->_rect.h() << '}'
+            << ", rect=" << w->_rect
+            << ", clipRect=" << clipRect
             << ", backgroundEnabled=" << w->_backgroundEnabled
             << '\n';
 #endif

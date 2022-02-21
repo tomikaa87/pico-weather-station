@@ -14,7 +14,9 @@ public:
         Pxl16x8,
         Pxl16x8_x2,
         Pxl16x8_Mono,
-        Pxl16x8_Mono_x2
+        Pxl16x8_Mono_x2,
+        BitCell,
+        BitCellMonoNumbers
     };
 
     enum class Style

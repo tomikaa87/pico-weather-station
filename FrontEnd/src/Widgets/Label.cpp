@@ -75,8 +75,9 @@ void Label::updateTextPosition()
 
     switch (_alignment) {
         case Align::Left:
+            _display->setFont(_font);
             _textPos = 
-                mapToGlobal(_rect.pos())
+                mapToGlobal(_rect.topLeft())
                 + Point{
                     0,
                     _display->calculateFontAscent() + 1
@@ -87,9 +88,9 @@ void Label::updateTextPosition()
             _display->setFont(_font);
             const auto textWidth = _display->calculateTextWidth(_text);
             _textPos =
-                mapToGlobal(_rect.pos())
+                mapToGlobal(_rect.topLeft())
                 + Point{
-                    _rect.w() / 2 - textWidth / 2,
+                    _rect.width() / 2 - textWidth / 2,
                     _display->calculateFontAscent() + 1
                 };
             break;
@@ -99,9 +100,9 @@ void Label::updateTextPosition()
             _display->setFont(_font);
             const auto textWidth = _display->calculateTextWidth(_text);
             _textPos =
-                mapToGlobal(_rect.pos())
+                mapToGlobal(_rect.topLeft())
                 + Point{
-                    _rect.w() - textWidth,
+                    _rect.width() - textWidth,
                     _display->calculateFontAscent() + 1
                 };
             break;
