@@ -125,7 +125,7 @@ void MainScreen::setInternalSensorTemperature(const float value)
     _internalSensorTempLabel.setText(
         fmt::format(
             "{:.1f}",
-            Utils::clamp(value, 0.f, 99.f)
+            Utils::clamp(value, -99.f, 99.f)
         )
     );
 }
@@ -135,7 +135,7 @@ void MainScreen::setInternalSensorHumidity(const float value)
     _internalSensorHumidityLabel.setText(
         fmt::format(
             "{:.1f}",
-            Utils::clamp(value, 0.f, 99.f)
+            Utils::clamp(value, 0.f, 100.f)
         )
     );
 }
@@ -217,12 +217,12 @@ void MainScreen::setupLayout()
     // Internal sensor
     setupSmallNumberLabel(
         _internalSensorTempLabel,
-        fromPhotoshopRectForSmall({ 14, 137, 20, 7 }),
+        fromPhotoshopRectForSmall({ 10, 137, 24, 7 }),
         false
     );
     setupSmallNumberLabel(
         _internalSensorHumidityLabel,
-        fromPhotoshopRectForSmall({ 14, 150, 20, 7 }),
+        fromPhotoshopRectForSmall({ 10, 150, 24, 7 }),
         false
     );
 

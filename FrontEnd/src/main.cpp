@@ -176,6 +176,8 @@ int main()
         mainScreen.setCurrentHumidity(humidity);
         mainScreen.setCurrentWindSpeed(windSpeed);
         mainScreen.setCurrentWindGustSpeed(windSpeed);
+        mainScreen.setInternalSensorHumidity(humidity);
+        mainScreen.setInternalSensorTemperature(temperature);
 
         painter.paintWidget(&mainScreen);
 
