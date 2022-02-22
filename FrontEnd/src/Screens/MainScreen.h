@@ -16,6 +16,8 @@ public:
 
     void setCurrentTemperature(int value);
     void setCurrentSensorTemperature(int value);
+    void setCurrentMinimumTemperature(int value);
+    void setCurrentMaximumTemperature(int value);
     void setCurrentPressure(int value);
     void setCurrentHumidity(int value);
     void setCurrentWindSpeed(int value);
@@ -31,6 +33,8 @@ private:
     Image _weatherIcon;
     Label _currentTemperatureLabel;
     Label _currentSensorTempLabel;
+    Label _currentMinTempLabel;
+    Label _currentMaxTempLabel;
     Label _currentPressureLabel;
     Label _currentHumidityLabel;
     Label _currentWindSpeedLabel;

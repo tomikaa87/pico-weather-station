@@ -15,6 +15,8 @@ MainScreen::MainScreen(Display* const display)
     , _weatherIcon{ this }
     , _currentTemperatureLabel{ this }
     , _currentSensorTempLabel{ this }
+    , _currentMinTempLabel{ this }
+    , _currentMaxTempLabel{ this }
     , _currentPressureLabel{ this }
     , _currentHumidityLabel{ this }
     , _currentWindSpeedLabel{ this }
@@ -48,6 +50,8 @@ MainScreen::MainScreen(Display* const display)
     _weatherIcon.setName("WeatherIcon");
     _currentTemperatureLabel.setName("CurrentTemperatureLabel");
     _currentSensorTempLabel.setName("CurrentSensorTempLabel");
+    _currentMinTempLabel.setName("CurrentMinTempLabel");
+    _currentMaxTempLabel.setName("CurrentMaxTempLabel");
     _currentPressureLabel.setName("CurrentPressureLabel");
     _currentHumidityLabel.setName("CurrentHumidityLabel");
     _currentWindSpeedLabel.setName("CurrentWindSpeedLabel");
@@ -81,6 +85,16 @@ void MainScreen::setCurrentTemperature(const int value)
 void MainScreen::setCurrentSensorTemperature(const int value)
 {
     _currentSensorTempLabel.setText(std::to_string(Utils::clamp(value, -99, 99)));
+}
+
+void MainScreen::setCurrentMinimumTemperature(const int value)
+{
+    _currentMinTempLabel.setText(std::to_string(Utils::clamp(value, -99, 99)));
+}
+
+void MainScreen::setCurrentMaximumTemperature(const int value)
+{
+    _currentMaxTempLabel.setText(std::to_string(Utils::clamp(value, -99, 99)));
 }
 
 void MainScreen::setCurrentPressure(const int value)
@@ -174,6 +188,14 @@ void MainScreen::setupLayout()
         fromPhotoshopRect({ 136, 19, 26, 16 })
     );
     _currentSensorTempLabel.setAlignment(Label::Align::Left);
+    setupMediumNumberLabel(
+        _currentMinTempLabel,
+        fromPhotoshopRect({ 86, 41, 26, 16 })
+    );
+    setupMediumNumberLabel(
+        _currentMaxTempLabel,
+        fromPhotoshopRect({ 136, 41, 26, 16 })
+    );
     setupMediumNumberLabel(
         _currentPressureLabel,
         fromPhotoshopRect({ 186, 3, 35, 16 })

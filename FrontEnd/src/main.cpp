@@ -170,6 +170,8 @@ int main()
     while (true) {
         mainScreen.setCurrentTemperature(temperature);
         mainScreen.setCurrentSensorTemperature(temperature);
+        mainScreen.setCurrentMinimumTemperature(temperature);
+        mainScreen.setCurrentMaximumTemperature(temperature);
         mainScreen.setCurrentPressure(pressure);
         mainScreen.setCurrentHumidity(humidity);
         mainScreen.setCurrentWindSpeed(windSpeed);
