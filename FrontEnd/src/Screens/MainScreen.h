@@ -18,6 +18,9 @@ public:
     void setCurrentWindSpeed(int value);
     void setCurrentWindGustSpeed(int value);
 
+    void setInternalSensorTemperature(float value);
+    void setInternalSensorHumidity(float value);
+
 protected:
     void paint() override;
 
@@ -29,6 +32,9 @@ private:
     Label _currentHumidityLabel;
     Label _currentWindSpeedLabel;
     Label _currentWindGustSpeedLabel;
+
+    Label _internalSensorTempLabel;
+    Label _internalSensorHumidityLabel;
 
     Label _clockHoursLabel;
     Label _clockMinutesLabel;
@@ -49,7 +55,8 @@ private:
 
     static void setupSmallNumberLabel(
         Label& label,
-        Rect rect
+        Rect rect,
+        bool monospaced = true
     );
 
     static std::string clampedValueToString(

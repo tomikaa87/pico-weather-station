@@ -19,4 +19,10 @@ namespace Utils
     {
         return a > b ? a : b;
     }
+
+    template <typename ValueType>
+    constexpr ValueType clamp(const ValueType value, const ValueType rangeMin, const ValueType rangeMax)
+    {
+        return max(rangeMin, min(rangeMax, value));
+    }
 }

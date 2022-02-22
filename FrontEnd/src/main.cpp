@@ -147,6 +147,8 @@ int main()
     mainScreen.setCurrentHumidity(888);
     mainScreen.setCurrentWindSpeed(888);
     mainScreen.setCurrentWindGustSpeed(818);
+    mainScreen.setInternalSensorHumidity(88.8);
+    mainScreen.setInternalSensorTemperature(88.8);
 #else
     Widget mainScreen{ &display };
     mainScreen.setRect({ 0, 0, 240, 160 });
@@ -158,7 +160,7 @@ int main()
     Painter painter;
     painter.paintWidget(&mainScreen);
 
-    // return 0;
+    return 0;
 
     int temperature = -30;
     int pressure = 1000;

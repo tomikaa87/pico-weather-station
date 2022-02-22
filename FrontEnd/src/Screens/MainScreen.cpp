@@ -8,6 +8,8 @@
 #include <algorithm>
 #include <string>
 
+#include <fmt/core.h>
+
 MainScreen::MainScreen(Display* const display)
     : Widget{ display }
     , _weatherIcon{ this }
@@ -21,6 +23,9 @@ MainScreen::MainScreen(Display* const display)
     ,_clockHoursLabel{ this }
     ,_clockMinutesLabel{ this }
     ,_clockDateLabel{ this }
+
+    , _internalSensorTempLabel{ this }
+    , _internalSensorHumidityLabel{ this }
 {
     setName("MainScreen");
     setRect({
@@ -76,6 +81,26 @@ void MainScreen::setCurrentWindSpeed(const int value)
 void MainScreen::setCurrentWindGustSpeed(const int value)
 {
     _currentWindGustSpeedLabel.setText(clampedValueToString(value, 0, 999));
+}
+
+void MainScreen::setInternalSensorTemperature(const float value)
+{
+    _internalSensorTempLabel.setText(
+        fmt::format(
+            "{:.1f}",
+            Utils::clamp(value, 0.f, 99.f)
+        )
+    );
+}
+
+void MainScreen::setInternalSensorHumidity(const float value)
+{
+    _internalSensorHumidityLabel.setText(
+        fmt::format(
+            "{:.1f}",
+            Utils::clamp(value, 0.f, 99.f)
+        )
+    );
 }
 
 void MainScreen::paint()
@@ -144,6 +169,18 @@ void MainScreen::setupLayout()
     );
     _currentWindGustSpeedLabel.setAlignment(Label::Align::Left);
 
+    // Internal sensor
+    setupSmallNumberLabel(
+        _internalSensorTempLabel,
+        fromPhotoshopRectForSmall({ 14, 137, 20, 7 }),
+        false
+    );
+    setupSmallNumberLabel(
+        _internalSensorHumidityLabel,
+        fromPhotoshopRectForSmall({ 14, 150, 20, 7 }),
+        false
+    );
+
     // Clock
     setupMediumNumberLabel(
         _clockHoursLabel,
@@ -186,9 +223,13 @@ void MainScreen::setupMediumNumberLabel(Label& label, Rect rect)
     // label.setBackgroundEnabled(false);
 }
 
-void MainScreen::setupSmallNumberLabel(Label& label, Rect rect)
+void MainScreen::setupSmallNumberLabel(Label& label, Rect rect, const bool monospaced)
 {
-    label.setFont(Font{ Font::Family::BitCellMonoNumbers });
+    label.setFont(Font{
+        monospaced
+            ? Font::Family::BitCellMonoNumbers
+            : Font::Family::BitCell
+    });
     label.setHeightCalculation(Label::HeightCalculation::NoDescent);
     label.setRect(std::move(rect));
     label.setAlignment(Label::Align::Right);
