@@ -95,6 +95,13 @@ void MainScreen::setupLayout()
 {
     _weatherIcon.setPos({ 2, 2 });
 
+    static const auto fromPhotoshopRectForLarge = [](Rect rect) {
+        auto r = std::move(rect);
+        r.moveTopLeft({ r.x(), r.y() - 1 });
+        r.setSize({ r.width() + 1, r.height() + 1 });
+        return r;
+    };
+
     static const auto fromPhotoshopRect = [](Rect rect) {
         auto r = std::move(rect);
         r.moveTopLeft({ r.x(), r.y() - 1 });
@@ -112,7 +119,7 @@ void MainScreen::setupLayout()
     // Current conditions
     setupLargeNumberLabel(
         _currentTemperatureLabel,
-        fromPhotoshopRect({ 80, 3, 52, 32 })
+        fromPhotoshopRectForLarge({ 80, 3, 52, 32 })
     );
     setupMediumNumberLabel(
         _currentSensorTempLabel,
@@ -147,9 +154,9 @@ void MainScreen::setupLayout()
         fromPhotoshopRect({ 223, 136, 17, 16 })
     );
     _clockDateLabel.setFont(Font{ Font::Family::BitCell });
-    _clockDateLabel.setRect(fromPhotoshopRectForSmall({ 202, 153, 38, 7 }));
     _clockDateLabel.setAlignment(Label::Align::Left);
     _clockDateLabel.setHeightCalculation(Label::HeightCalculation::NoDescent);
+    _clockDateLabel.setRect(fromPhotoshopRectForSmall({ 202, 153, 38, 7 }));
 }
 
 void MainScreen::setWeatherIcon()
