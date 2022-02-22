@@ -4,6 +4,7 @@
 #include "../Widgets/Label.h"
 #include "../Widgets/Widget.h"
 
+#include <array>
 #include <deque>
 
 class Display;
@@ -61,6 +62,32 @@ private:
         bool monospaced = true
     );
 
+    class ForecastWidget final : public Widget
+    {
+    public:
+        explicit ForecastWidget(Widget* parent);
+
+        inline void setDate(std::string date);
+        inline void setMinimumTemperature(int value);
+        inline void setMaximumTemperature(int value);
+        inline void setWindSpeed(int value);
+
+    protected:
+        void onResize() override;
+
+    private:
+        Label _dateLabel;
+        Label _minTempLabel;
+        Label _maxTempLabel;
+        Label _windSpeedLabel;
+
+        static void setupLabel(
+            Label& label,
+            Label::Align alignment,
+            bool numbersOnly = true
+        );
+    };
+
     class GraphAxisLabelsWidget final : public Widget
     {
     public:
@@ -108,6 +135,8 @@ private:
         void trimSamples();
         void updateRanges();
     };
+
+    std::array<ForecastWidget, 3> _forecastWidgets;
 
     GraphAxisLabelsWidget _temperatureGraphLabels;
     GraphAxisLabelsWidget _pressureGraphLabels;

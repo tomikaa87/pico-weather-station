@@ -27,6 +27,12 @@ MainScreen::MainScreen(Display* const display)
     , _internalSensorTempLabel{ this }
     , _internalSensorHumidityLabel{ this }
 
+    , _forecastWidgets{
+        ForecastWidget{ this },
+        ForecastWidget{ this },
+        ForecastWidget{ this }
+    }
+
     , _temperatureGraphLabels{ this }
     , _pressureGraphLabels{ this }
 
@@ -212,6 +218,18 @@ void MainScreen::setupLayout()
     _clockDateLabel.setHeightCalculation(Label::HeightCalculation::NoDescent);
     _clockDateLabel.setRect(fromPhotoshopRectForSmall({ 202, 153, 38, 7 }));
 
+    // Forecast widgets
+    _forecastWidgets[0].setRect({ 99, 73, 47, 60 });
+    _forecastWidgets[1].setRect({ 147, 73, 47, 60 });
+    _forecastWidgets[2].setRect({ 195, 73, 47, 60 });
+
+    for (auto& fw : _forecastWidgets) {
+        fw.setDate("88 WWW");
+        fw.setMinimumTemperature(-88);
+        fw.setMaximumTemperature(-88);
+        fw.setWindSpeed(888);
+    }
+
     // Graph widgets
     _temperatureGraphLabels.setRect({ 15, 75, 23, 25 });
     _pressureGraphLabels.setRect({ 15, 105, 23, 25 });
@@ -256,7 +274,63 @@ void MainScreen::setupSmallNumberLabel(Label& label, Rect rect, const bool monos
     label.setAlignment(Label::Align::Right);
 }
 
-MainScreen::GraphAxisLabelsWidget::GraphAxisLabelsWidget(Widget* parent)
+MainScreen::ForecastWidget::ForecastWidget(Widget* const parent)
+    : Widget{ parent }
+    , _dateLabel{ this }
+    , _minTempLabel{ this }
+    , _maxTempLabel{ this }
+    , _windSpeedLabel{ this }
+{
+    setBackgroundEnabled(false);
+
+    setupLabel(_dateLabel, Label::Align::Center, false);
+    setupLabel(_minTempLabel, Label::Align::Right);
+    setupLabel(_maxTempLabel, Label::Align::Right);
+    setupLabel(_windSpeedLabel, Label::Align::Right);
+}
+
+void MainScreen::ForecastWidget::setDate(std::string date)
+{
+    _dateLabel.setText(std::move(date));
+}
+
+void MainScreen::ForecastWidget::setMinimumTemperature(const int value)
+{
+    _minTempLabel.setText(std::to_string(Utils::clamp(value, -99, 99)));
+}
+
+void MainScreen::ForecastWidget::setMaximumTemperature(const int value)
+{
+    _maxTempLabel.setText(std::to_string(Utils::clamp(value, -99, 99)));
+}
+
+void MainScreen::ForecastWidget::setWindSpeed(const int value)
+{
+    _windSpeedLabel.setText(std::to_string(Utils::clamp(value, 0, 999)));
+}
+
+void MainScreen::ForecastWidget::onResize()
+{
+    _dateLabel.setRect({ 0, 1, _rect.width(), _dateLabel.rect().height() });
+    _minTempLabel.setRect({ 9, 33, 16, _minTempLabel.rect().height() });
+    _maxTempLabel.setRect({ 30, 33, 16, _maxTempLabel.rect().height() });
+    _windSpeedLabel.setRect({ 14, 47, 18, _windSpeedLabel.rect().height() });
+
+    Widget::onResize();
+}
+
+void MainScreen::ForecastWidget::setupLabel(
+    Label& label,
+    const Label::Align alignment,
+    const bool numbersOnly
+) {
+    label.setFont(Font{ numbersOnly ? Font::Family::BitCellMonoNumbers : Font::Family::BitCell });
+    label.setHeightCalculation(Label::HeightCalculation::NoDescent);
+    label.setAlignment(alignment);
+    label.setHeight(8);
+}
+
+MainScreen::GraphAxisLabelsWidget::GraphAxisLabelsWidget(Widget* const parent)
     : Widget{ parent }
     , _minLabel{ this }
     , _maxLabel{ this }
@@ -297,7 +371,7 @@ void MainScreen::GraphAxisLabelsWidget::setupLabel(Label& label)
     label.setHeight(8);
 }
 
-MainScreen::GraphWidget::GraphWidget(Widget* parent)
+MainScreen::GraphWidget::GraphWidget(Widget* const parent)
     : Widget{ parent }
 {}
 
