@@ -67,5 +67,7 @@ protected:
 
     virtual void paint();
 
+    virtual void onResize() {};
+
     Rect calculateClipRect() const;
 };

@@ -42,6 +42,7 @@ public:
     void drawText(const Point& pos, const std::string& s);
     void drawBitmap(const Point& pos, int width, int height, const uint8_t* data);
     void drawRect(const Rect& rect);
+    void drawLine(const Point& from, const Point& to);
 
     void fillRect(const Rect& rect);
 

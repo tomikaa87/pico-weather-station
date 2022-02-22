@@ -133,6 +133,11 @@ void Display::drawRect(const Rect& rect)
     u8g2_DrawFrame(&_p->u8g2, rect.x(), rect.y(), rect.width(), rect.height());
 }
 
+void Display::drawLine(const Point& from, const Point& to)
+{
+    u8g2_DrawLine(&_p->u8g2, from.x(), from.y(), to.x(), to.y());
+}
+
 void Display::fillRect(const Rect& rect)
 {
     u8g2_DrawBox(&_p->u8g2, rect.x(), rect.y(), rect.width(), rect.height());

@@ -43,6 +43,8 @@ void Widget::setSize(Size s)
     _rect.setSize(std::move(s));
     _needsRepaint = true;
     _parentNeedsRepaint = true;
+
+    onResize();
 }
 
 void Widget::setWidth(const int width)
@@ -50,6 +52,8 @@ void Widget::setWidth(const int width)
     _rect.setWidth(width);
     _needsRepaint = true;
     _parentNeedsRepaint = true;
+
+    onResize();
 }
 
 void Widget::setHeight(const int height)
@@ -57,6 +61,8 @@ void Widget::setHeight(const int height)
     _rect.setHeight(height);
     _needsRepaint = true;
     _parentNeedsRepaint = true;
+
+    onResize();
 }
 
 void Widget::setRect(Rect r)
@@ -64,6 +70,8 @@ void Widget::setRect(Rect r)
     _rect = std::move(r);
     _needsRepaint = true;
     _parentNeedsRepaint = true;
+
+    onResize();
 }
 
 void Widget::setBackgroundEnabled(const bool enabled)
@@ -116,10 +124,8 @@ Rect Widget::mapToParent(const Rect& r) const
 void Widget::paint()
 {
 #if DEBUG_WIDGET
-    // _display->setClipRect(calculateClipRect());
     _display->setDrawColor(Display::Color::Black);
     _display->drawRect(mapToGlobal(_rect));
-    // _display->resetClipRect();
 #endif
 }
 

@@ -141,9 +141,9 @@ int main()
 
 #if 1
     MainScreen mainScreen{ &display };
-    mainScreen.setCurrentTemperature(-88);
+    // mainScreen.setCurrentTemperature(-88);
     mainScreen.setCurrentSensorTemperature(-88);
-    mainScreen.setCurrentPressure(8888);
+    // mainScreen.setCurrentPressure(8888);
     mainScreen.setCurrentHumidity(888);
     mainScreen.setCurrentWindSpeed(888);
     mainScreen.setCurrentWindGustSpeed(818);
@@ -160,7 +160,7 @@ int main()
     Painter painter;
     painter.paintWidget(&mainScreen);
 
-    return 0;
+    // return 0;
 
     int temperature = -30;
     int pressure = 1000;

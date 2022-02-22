@@ -4,6 +4,8 @@
 #include "../Widgets/Label.h"
 #include "../Widgets/Widget.h"
 
+#include <deque>
+
 class Display;
 
 class MainScreen final : public Widget
@@ -59,9 +61,57 @@ private:
         bool monospaced = true
     );
 
-    static std::string clampedValueToString(
-        int value,
-        int min,
-        int max
-    );
+    class GraphAxisLabelsWidget final : public Widget
+    {
+    public:
+        explicit GraphAxisLabelsWidget(Widget* parent);
+
+        void setRange(int min, int max);
+
+    protected:
+        void onResize() override;
+
+    private:
+        Label _maxLabel;
+        Label _minLabel;
+
+        static void setupLabel(Label& label);
+    };
+
+    class GraphWidget final : public Widget
+    {
+    public:
+        explicit GraphWidget(Widget* parent);
+
+        void addSample(int sample);
+
+        inline int sampleMin() const
+        {
+            return _sampleMin;
+        }
+
+        inline int sampleMax() const
+        {
+            return _sampleMax;
+        }
+
+    protected:
+        void paint() override;
+        void onResize() override;
+
+    private:
+        std::deque<int> _samples;
+
+        int _sampleMin = 0;
+        int _sampleMax = 0;
+
+        void trimSamples();
+        void updateRanges();
+    };
+
+    GraphAxisLabelsWidget _temperatureGraphLabels;
+    GraphAxisLabelsWidget _pressureGraphLabels;
+
+    GraphWidget _temperatureGraph;
+    GraphWidget _pressureGraph;
 };
