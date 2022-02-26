@@ -16,8 +16,8 @@ public:
 
     enum class Color
     {
-        Black,
         White,
+        Black,
         Xor
     };
 
