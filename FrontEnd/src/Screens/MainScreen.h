@@ -26,6 +26,9 @@ public:
     void setInternalSensorTemperature(float value);
     void setInternalSensorHumidity(float value);
 
+    void setClockTime(int hours, int minutes);
+    void setClockDate(int day, const std::string& dayOfWeek);
+
 protected:
     void paint() override;
 

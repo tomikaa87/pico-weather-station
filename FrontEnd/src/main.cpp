@@ -149,6 +149,8 @@ int main()
     mainScreen.setCurrentWindGustSpeed(818);
     mainScreen.setInternalSensorHumidity(88.8);
     mainScreen.setInternalSensorTemperature(88.8);
+    mainScreen.setClockTime(12, 34);
+    mainScreen.setClockDate(23, "Wed");
 #else
     Widget mainScreen{ &display };
     mainScreen.setRect({ 0, 0, 240, 160 });

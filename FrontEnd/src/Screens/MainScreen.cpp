@@ -68,10 +68,6 @@ MainScreen::MainScreen(Display* const display)
 
     setupLayout();
     setWeatherIcon();
-
-    _clockHoursLabel.setText("88");
-    _clockMinutesLabel.setText("88");
-    _clockDateLabel.setText("88 WWW");
 }
 
 void MainScreen::setCurrentTemperature(const int value)
@@ -137,6 +133,19 @@ void MainScreen::setInternalSensorHumidity(const float value)
             "{:.1f}",
             Utils::clamp(value, 0.f, 100.f)
         )
+    );
+}
+
+void MainScreen::setClockTime(const int hours, const int minutes)
+{
+    _clockHoursLabel.setText(std::to_string(Utils::clamp(hours, 0, 23)));
+    _clockMinutesLabel.setText(std::to_string(Utils::clamp(minutes, 0, 59)));
+}
+
+void MainScreen::setClockDate(const int day, const std::string& dayOfWeek)
+{
+    _clockDateLabel.setText(
+        fmt::format("{:02d} {}", Utils::clamp(day, 1, 31), dayOfWeek)
     );
 }
 
