@@ -2,7 +2,7 @@
 #include "Graphics.h"
 #include "Icons.h"
 
-#include "Screens/MainScreen.h"
+#include "Screens/WeatherStation.h"
 
 #include "Widgets/Display.h"
 #include "Widgets/Image.h"
@@ -140,27 +140,27 @@ int main()
     display.clear();
 
 #if 1
-    MainScreen mainScreen{ &display };
-    // mainScreen.setCurrentTemperature(-88);
-    mainScreen.setCurrentSensorTemperature(-88);
-    // mainScreen.setCurrentPressure(8888);
-    mainScreen.setCurrentHumidity(888);
-    mainScreen.setCurrentWindSpeed(888);
-    mainScreen.setCurrentWindGustSpeed(818);
-    mainScreen.setInternalSensorHumidity(88.8);
-    mainScreen.setInternalSensorTemperature(88.8);
-    mainScreen.setClockTime(12, 34);
-    mainScreen.setClockDate(23, "Wed");
+    Screens::WeatherStation weatherStation{ &display };
+    // weatherStation.setCurrentTemperature(-88);
+    weatherStation.setCurrentSensorTemperature(-88);
+    // weatherStation.setCurrentPressure(8888);
+    weatherStation.setCurrentHumidity(888);
+    weatherStation.setCurrentWindSpeed(888);
+    weatherStation.setCurrentWindGustSpeed(818);
+    weatherStation.setInternalSensorHumidity(88.8);
+    weatherStation.setInternalSensorTemperature(88.8);
+    weatherStation.setClockTime(12, 34);
+    weatherStation.setClockDate(23, "Wed");
 #else
-    Widget mainScreen{ &display };
-    mainScreen.setRect({ 0, 0, 240, 160 });
-    Image mainScreenImage{ &mainScreen };
+    Widget weatherStation{ &display };
+    weatherStation.setRect({ 0, 0, 240, 160 });
+    Image mainScreenImage{ &weatherStation };
     mainScreenImage.setRect({ 0, 0, 240, 160 });
-    mainScreenImage.setImage(Graphics::MainScreenTest, 240, 160);
+    mainScreenImage.setImage(Graphics::WeatherStationBackground, 240, 160);
 #endif
 
     Painter painter;
-    painter.paintWidget(&mainScreen);
+    painter.paintWidget(&weatherStation);
 
     // return 0;
 
@@ -170,18 +170,18 @@ int main()
     int windSpeed = 50;
 
     while (true) {
-        mainScreen.setCurrentTemperature(temperature);
-        mainScreen.setCurrentSensorTemperature(temperature);
-        mainScreen.setCurrentMinimumTemperature(temperature);
-        mainScreen.setCurrentMaximumTemperature(temperature);
-        mainScreen.setCurrentPressure(pressure);
-        mainScreen.setCurrentHumidity(humidity);
-        mainScreen.setCurrentWindSpeed(windSpeed);
-        mainScreen.setCurrentWindGustSpeed(windSpeed);
-        mainScreen.setInternalSensorHumidity(humidity);
-        mainScreen.setInternalSensorTemperature(temperature);
+        weatherStation.setCurrentTemperature(temperature);
+        weatherStation.setCurrentSensorTemperature(temperature);
+        weatherStation.setCurrentMinimumTemperature(temperature);
+        weatherStation.setCurrentMaximumTemperature(temperature);
+        weatherStation.setCurrentPressure(pressure);
+        weatherStation.setCurrentHumidity(humidity);
+        weatherStation.setCurrentWindSpeed(windSpeed);
+        weatherStation.setCurrentWindGustSpeed(windSpeed);
+        weatherStation.setInternalSensorHumidity(humidity);
+        weatherStation.setInternalSensorTemperature(temperature);
 
-        painter.paintWidget(&mainScreen);
+        painter.paintWidget(&weatherStation);
 
         if (++temperature > 30) {
             temperature = -30;

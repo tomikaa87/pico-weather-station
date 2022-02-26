@@ -9,10 +9,13 @@
 
 class Display;
 
-class MainScreen final : public Widget
+namespace Screens
+{
+
+class WeatherStation final : public Widget
 {
 public:
-    explicit MainScreen(Display* display);
+    explicit WeatherStation(Display* display);
 
     void setCurrentTemperature(int value);
     void setCurrentSensorTemperature(int value);
@@ -151,3 +154,5 @@ private:
     GraphWidget _temperatureGraph;
     GraphWidget _pressureGraph;
 };
+
+}

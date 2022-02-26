@@ -7,7 +7,7 @@ namespace Graphics
     constexpr auto MainScreenWidth = 240;
     constexpr auto MainScreenHeight = 160;
 
-    extern ImageData MainScreenTest[];
+    extern ImageData WeatherStationTest[];
 
-    extern ImageData MainScreenBackground[];
+    extern ImageData WeatherStationBackground[];
 }
