@@ -9,6 +9,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(U8G2_DIR ${CMAKE_SOURCE_DIR}/dependencies/u8g2)
 set(WIRING_PI_DIR ${CMAKE_SOURCE_DIR}/dependencies/wiringpi)
 set(FMT_DIR ${CMAKE_SOURCE_DIR}/dependencies/fmt)
+set(FLATBUFFERS_DIR ${CMAKE_SOURCE_DIR}/dependencies/flatbuffers)
 
 add_executable(oled
     ${CMAKE_SOURCE_DIR}/src/main.cpp
@@ -19,6 +20,9 @@ add_executable(oled
     ${CMAKE_SOURCE_DIR}/src/Graphics.cpp
     ${CMAKE_SOURCE_DIR}/src/Graphics.h
     ${CMAKE_SOURCE_DIR}/src/u8x8_d_st7586s_erc240160_chunked.c
+
+    ${CMAKE_SOURCE_DIR}/src/Network/NetworkEngineInterface.cpp
+    ${CMAKE_SOURCE_DIR}/src/Network/NetworkEngineInterface.h
 
     ${CMAKE_SOURCE_DIR}/src/Screens/WeatherStation.cpp
     ${CMAKE_SOURCE_DIR}/src/Screens/WeatherStation.h
@@ -92,4 +96,9 @@ target_compile_definitions(oled
         RASPBERRY_PI
         DEBUG_WIDGET=0
         DEBUG_PAINTER=1
+)
+
+target_include_directories(oled
+    PRIVATE
+        ${FLATBUFFERS_DIR}/include
 )

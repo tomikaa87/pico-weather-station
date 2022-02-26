@@ -2,6 +2,8 @@
 #include "Graphics.h"
 #include "Icons.h"
 
+#include "Network/NetworkEngineInterface.h"
+
 #include "Screens/WeatherStation.h"
 
 #include "Widgets/Display.h"
@@ -138,6 +140,9 @@ int main()
     signal(SIGINT, signalHandler);
 
     display.clear();
+
+    NetworkEngineInterface nei;
+    nei.f();
 
 #if 1
     Screens::WeatherStation weatherStation{ &display };

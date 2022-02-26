@@ -7,3 +7,6 @@
 [submodule "FrontEnd/dependencies/fmt"]
 	path = FrontEnd/dependencies/fmt
 	url = https://github.com/fmtlib/fmt.git
+[submodule "FrontEnd/dependencies/flatbuffers"]
+	path = FrontEnd/dependencies/flatbuffers
+	url = https://github.com/google/flatbuffers.git

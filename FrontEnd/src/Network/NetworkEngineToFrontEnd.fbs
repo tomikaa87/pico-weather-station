@@ -1,0 +1,51 @@
+namespace NetworkEngineToFrontEnd;
+
+table CurrentWeatherConditions
+{
+    temperature: int16;
+    minimum_temperature: int16;
+    maximum_temperature: int16;
+    pressure: uint16;
+    humidity: uint8;
+    wind_speed: uint16;
+    wind_gust_speed: uint16;
+    condition_code: uint16;
+    text: string;
+}
+
+table ForecastWeatherConditions
+{
+    temperature: int16;
+    minimum_temperature: int16;
+    maximum_temperature: int16;
+    pressure: uint16;
+    humidity: uint8;
+    wind_speed: uint16;
+    wind_gust_speed: uint16;
+    condition_code: uint16;
+    text: string;
+}
+
+table WeatherData
+{
+    current: CurrentWeatherConditions;
+    forecast: [ForecastWeatherConditions];
+}
+
+table DateTimeData
+{
+    epoch: int64;
+}
+
+union Data
+{
+    WeatherData: WeatherData,
+    DateTimeData: DateTimeData
+}
+
+table Packet
+{
+    data: Data;
+}
+
+root_type Packet;
