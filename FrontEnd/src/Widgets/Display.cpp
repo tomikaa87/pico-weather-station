@@ -11,7 +11,7 @@
 
 static uint8_t u8x8_wiringpi_gpio_and_delay(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr);
 static uint8_t u8x8_byte_wiringpi_hw_spi(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr);
-
+#endif
 
 extern "C" {
 extern uint8_t u8x8_d_st7586s_erc240160_chunked(
@@ -21,8 +21,6 @@ extern uint8_t u8x8_d_st7586s_erc240160_chunked(
     void *arg_ptr
 );
 }
-
-#endif
 
 namespace Pins
 {
@@ -172,11 +170,7 @@ void Display::setup()
 
     u8g2_SetupDisplay(
         &_p->u8g2,
-#ifdef RASPBERRY_PI
         u8x8_d_st7586s_erc240160_chunked,
-#else
-        u8x8_d_st7586s_erc240160,
-#endif
         u8x8_cad_011,
 #ifdef RASPBERRY_PI
         u8x8_byte_wiringpi_hw_spi,

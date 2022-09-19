@@ -34,9 +34,10 @@
 */
 
 #ifdef RASPBERRY_PI
-
-#include "u8g2.h"
-
+#include <u8g2.h>
+#else
+#include "clib/u8g2.h"
+#endif
 
 static const uint8_t u8x8_d_st7586s_sleep_on[] = {
   U8X8_START_TRANSFER(),  /* enable chip, delay is part of the transfer start */
@@ -270,5 +271,3 @@ uint8_t u8x8_d_st7586s_erc240160_chunked(u8x8_t *u8x8, uint8_t msg, uint8_t arg_
   }
   return 1;
 }
-
-#endif
