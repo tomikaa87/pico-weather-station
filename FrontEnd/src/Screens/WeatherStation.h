@@ -46,12 +46,12 @@ private:
     Label _currentWindSpeedLabel;
     Label _currentWindGustSpeedLabel;
 
-    Label _internalSensorTempLabel;
-    Label _internalSensorHumidityLabel;
-
     Label _clockHoursLabel;
     Label _clockMinutesLabel;
     Label _clockDateLabel;
+
+    Label _internalSensorTempLabel;
+    Label _internalSensorHumidityLabel;
 
     void setupLayout();
     void setWeatherIcon();

@@ -366,8 +366,8 @@ void WeatherStation::ForecastWidget::setupLabel(
 
 WeatherStation::GraphAxisLabelsWidget::GraphAxisLabelsWidget(Widget* const parent)
     : Widget{ parent }
-    , _minLabel{ this }
     , _maxLabel{ this }
+    , _minLabel{ this }
 {
     setupLabel(_minLabel);
     setupLabel(_maxLabel);

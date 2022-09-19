@@ -19,9 +19,12 @@ Widget::Widget(Widget* parent)
 Widget::~Widget()
 {
     if (_parent) {
-        std::erase(
-            _children,
-            this
+        _children.erase(
+            std::remove(
+                std::begin(_children),
+                std::end(_children),
+                this
+            )
         );
     }
 }

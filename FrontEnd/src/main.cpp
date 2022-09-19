@@ -2,8 +2,6 @@
 #include "Graphics.h"
 #include "Icons.h"
 
-#include "Network/NetworkEngineInterface.h"
-
 #include "Screens/WeatherStation.h"
 
 #include "Widgets/Display.h"
@@ -14,21 +12,41 @@
 #include "Widgets/Widget.h"
 
 #include <algorithm>
-#include <chrono>
-#include <csignal>
-#include <iostream>
 #include <string>
-#include <thread>
-
-#include <unistd.h>
-#include <termios.h>
 
 #include <fmt/core.h>
 
+#ifdef RASPBERRY_PI
+#include <thread>
+#include <chrono>
+#include <csignal>
+#include <iostream>
+#include <unistd.h>
+#include <termios.h>
+
 using namespace std::chrono_literals;
+#endif
 
-static Display display;
+// #include <fmt/core.h>
 
+namespace
+{
+    std::unique_ptr<Display> display;
+    std::unique_ptr<Screens::WeatherStation> weatherStation;
+    std::unique_ptr<Painter> painter;
+    // Screens::WeatherStation weatherStation{ &display };
+    // Painter painter;
+
+    int temperature = -30;
+    int pressure = 1000;
+    int humidity = 50;
+    int windSpeed = 50;
+
+    int32_t lastUpdateMillis = 0;
+    auto updateLedOn = true;
+}
+
+#ifdef RASPBERRY_PI
 char getch()
 {
     char buf = 0;
@@ -55,6 +73,7 @@ void signalHandler(const int)
     display.clear();
     exit(0);
 }
+#endif
 
 #if 0
 void drawFancyProgressBar(
@@ -134,15 +153,81 @@ void drawFancyProgressBar(
 }
 #endif
 
+void setup()
+{
+    Serial.begin();
+
+    pinMode(LED_BUILTIN, OUTPUT);
+    digitalWrite(LED_BUILTIN, HIGH);
+
+    display = std::make_unique<Display>();
+    weatherStation = std::make_unique<Screens::WeatherStation>(display.get());
+    painter = std::make_unique<Painter>();
+
+    display->clear();
+
+    // weatherStation.setCurrentTemperature(-88);
+    weatherStation->setCurrentSensorTemperature(-88);
+    // weatherStation.setCurrentPressure(8888);
+    weatherStation->setCurrentHumidity(888);
+    weatherStation->setCurrentWindSpeed(888);
+    weatherStation->setCurrentWindGustSpeed(818);
+    weatherStation->setInternalSensorHumidity(88.8);
+    weatherStation->setInternalSensorTemperature(88.8);
+    weatherStation->setClockTime(12, 34);
+    weatherStation->setClockDate(23, "Wed");
+
+    digitalWrite(LED_BUILTIN, LOW);
+}
+
+void loop()
+{
+    if (millis() - lastUpdateMillis >= 500) {
+        lastUpdateMillis = millis();
+
+        digitalWrite(LED_BUILTIN, updateLedOn ? HIGH : LOW);
+        updateLedOn = !updateLedOn;
+
+        Serial.println(fmt::format("{}: update", __func__).c_str());
+
+        weatherStation->setCurrentTemperature(temperature);
+        weatherStation->setCurrentSensorTemperature(temperature);
+        weatherStation->setCurrentMinimumTemperature(temperature);
+        weatherStation->setCurrentMaximumTemperature(temperature);
+        weatherStation->setCurrentPressure(pressure);
+        weatherStation->setCurrentHumidity(humidity);
+        weatherStation->setCurrentWindSpeed(windSpeed);
+        weatherStation->setCurrentWindGustSpeed(windSpeed);
+        weatherStation->setInternalSensorHumidity(humidity);
+        weatherStation->setInternalSensorTemperature(temperature);
+
+        painter->paintWidget(weatherStation.get());
+
+        if (++temperature > 30) {
+            temperature = -30;
+        }
+
+        if (++pressure > 1030) {
+            pressure = 980;
+        }
+
+        if (++humidity > 100) {
+            humidity = 0;
+        }
+
+        if (++windSpeed > 120) {
+            windSpeed = 0;
+        }
+    }
+}
+
+#ifdef RASPBERRY_PI
 int main()
 {
     signal(SIGTERM, signalHandler);
     signal(SIGINT, signalHandler);
 
     display.clear();
-
-    NetworkEngineInterface nei;
-    nei.f();
 
 #if 1
     Screens::WeatherStation weatherStation{ &display };
@@ -456,3 +541,5 @@ int main()
     std::cout << "Works\n";
     return 0;
 }
+
+#endif

@@ -2,18 +2,16 @@
 
 #include "../Fonts.h"
 
-#include <u8g2.h>
-
-#include <iostream>
+#include <U8g2lib.h>
 
 #ifdef RASPBERRY_PI
+#include <iostream>
 #include <wiringPi.h>
 #include <wiringPiSPI.h>
 
 static uint8_t u8x8_wiringpi_gpio_and_delay(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr);
 static uint8_t u8x8_byte_wiringpi_hw_spi(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr);
 
-#endif
 
 extern "C" {
 extern uint8_t u8x8_d_st7586s_erc240160_chunked(
@@ -22,6 +20,15 @@ extern uint8_t u8x8_d_st7586s_erc240160_chunked(
     uint8_t arg_int,
     void *arg_ptr
 );
+}
+
+#endif
+
+namespace Pins
+{
+    constexpr auto CS = PIN_SPI0_SS;
+    constexpr auto DC = 21;
+    constexpr auto RST = 20;
 }
 
 struct Display::Private
@@ -73,7 +80,8 @@ void Display::setDrawColor(const Color color)
 
 void Display::setFont(const Font& font)
 {
-    if (const auto* const data = font.data(); data != nullptr) {
+    const auto* const data = font.data();
+    if (data != nullptr) {
         u8g2_SetFont(&_p->u8g2, data);
     }
 }
@@ -145,6 +153,8 @@ void Display::fillRect(const Rect& rect)
 
 void Display::setup()
 {
+    Serial.println(__FUNCTION__);
+
 #ifdef RASPBERRY_PI
     if (const auto result = wiringPiSetupGpio(); result != 0) {
         std::cout << "wiringPiSetupFailed: result=" << result << '\n';
@@ -162,23 +172,47 @@ void Display::setup()
 
     u8g2_SetupDisplay(
         &_p->u8g2,
+#ifdef RASPBERRY_PI
         u8x8_d_st7586s_erc240160_chunked,
+#else
+        u8x8_d_st7586s_erc240160,
+#endif
         u8x8_cad_011,
 #ifdef RASPBERRY_PI
         u8x8_byte_wiringpi_hw_spi,
         u8x8_wiringpi_gpio_and_delay
+#else
+        u8x8_byte_arduino_hw_spi,
+        u8x8_gpio_and_delay_arduino
 #endif
     );
+
+    Serial.println("u8g2_SetupDisplay OK");
 
     buf = u8g2_m_30_20_f(&tileBufHeight);
 
     u8g2_SetupBuffer(&_p->u8g2, buf, tileBufHeight, u8g2_ll_hvline_horizontal_right_lsb, U8G2_R0);
+
+    Serial.println("u8g2_SetupBuffer OK");
+
+#ifdef RASPBERRY_PI
     u8x8_SetPin(u8g2_GetU8x8(&_p->u8g2), U8X8_PIN_DC, 24);
     u8x8_SetPin(u8g2_GetU8x8(&_p->u8g2), U8X8_PIN_RESET, 25);
+#else
+    pinMode(Pins::CS, OUTPUT);
+    pinMode(Pins::DC, OUTPUT);
+    pinMode(Pins::RST, OUTPUT);
+
+    u8x8_SetPin(u8g2_GetU8x8(&_p->u8g2), U8X8_PIN_CS, Pins::CS);
+    u8x8_SetPin(u8g2_GetU8x8(&_p->u8g2), U8X8_PIN_DC, Pins::DC);
+    u8x8_SetPin(u8g2_GetU8x8(&_p->u8g2), U8X8_PIN_RESET, Pins::RST);
+#endif
 
     u8g2_InitDisplay(&_p->u8g2);
     u8g2_SetPowerSave(&_p->u8g2, 0);
     u8g2_SetContrast(&_p->u8g2, 60);
+
+    Serial.printf("%s OK", __FUNCTION__);
 }
 
 #ifdef RASPBERRY_PI

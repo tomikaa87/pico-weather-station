@@ -33,6 +33,8 @@
 
 */
 
+#ifdef RASPBERRY_PI
+
 #include "u8g2.h"
 
 
@@ -268,3 +270,5 @@ uint8_t u8x8_d_st7586s_erc240160_chunked(u8x8_t *u8x8, uint8_t msg, uint8_t arg_
   }
   return 1;
 }
+
+#endif
