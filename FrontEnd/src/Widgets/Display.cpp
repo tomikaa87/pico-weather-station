@@ -144,6 +144,15 @@ void Display::drawLine(const Point& from, const Point& to)
     u8g2_DrawLine(&_p->u8g2, from.x(), from.y(), to.x(), to.y());
 }
 
+void Display::drawLine(
+    const uint8_t x1,
+    const uint8_t y1,
+    const uint8_t x2,
+    const uint8_t y2
+) {
+    u8g2_DrawLine(&_p->u8g2, x1, y1, x2, y2);
+}
+
 void Display::fillRect(const Rect& rect)
 {
     u8g2_DrawBox(&_p->u8g2, rect.x(), rect.y(), rect.width(), rect.height());

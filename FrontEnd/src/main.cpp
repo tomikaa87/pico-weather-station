@@ -29,6 +29,8 @@ using namespace std::chrono_literals;
 
 // #include <fmt/core.h>
 
+#define ENABLE_DRAW_TEST 1
+
 namespace
 {
     std::unique_ptr<Display> display;
@@ -182,6 +184,19 @@ void setup()
 
 void loop()
 {
+#if ENABLE_DRAW_TEST
+    display->clear();
+
+    for (auto i = 0; i < 240; i += 2) {
+        display->drawLine(0, 0, i, 159);
+        display->update();
+    }
+
+    for (auto i = 158; i > 0; i -= 2) {
+        display->drawLine(0, 0, 239, i);
+        display->update();
+    }
+#else
     if (millis() - lastUpdateMillis >= 500) {
         lastUpdateMillis = millis();
 
@@ -219,6 +234,7 @@ void loop()
             windSpeed = 0;
         }
     }
+#endif
 }
 
 #ifdef RASPBERRY_PI

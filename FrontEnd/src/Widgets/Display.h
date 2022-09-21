@@ -43,6 +43,7 @@ public:
     void drawBitmap(const Point& pos, int width, int height, const uint8_t* data);
     void drawRect(const Rect& rect);
     void drawLine(const Point& from, const Point& to);
+    void drawLine(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2);
 
     void fillRect(const Rect& rect);
 
