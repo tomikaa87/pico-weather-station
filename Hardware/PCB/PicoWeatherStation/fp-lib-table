@@ -1,0 +1,5 @@
+(fp_lib_table
+  (lib (name "RP2040_minimal")(type "KiCad")(uri "${KIPRJMOD}/MCU_RaspberryPi_and_Boards.pretty")(options "")(descr ""))
+  (lib (name "PicoWeatherStation")(type "KiCad")(uri "${KIPRJMOD}/PicoWeatherStation.pretty")(options "")(descr ""))
+  (lib (name "RPi_Pico")(type "KiCad")(uri "${KIPRJMOD}/MCU_RaspberryPi_and_Boards.pretty")(options "")(descr ""))
+)

@@ -1,0 +1,4 @@
+(sym_lib_table
+  (lib (name "Pico")(type "Legacy")(uri "${KIPRJMOD}/MCU_RaspberryPi_and_Boards.lib")(options "")(descr ""))
+  (lib (name "PicoWeatherStation")(type "KiCad")(uri "${KIPRJMOD}/PicoWeatherStation.kicad_sym")(options "")(descr ""))
+)
