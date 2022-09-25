@@ -3,6 +3,9 @@
 #include "../Fonts.h"
 
 #include <U8g2lib.h>
+#include <SPI.h>
+
+#include <memory>
 
 #ifdef RASPBERRY_PI
 #include <iostream>
@@ -13,6 +16,11 @@ static uint8_t u8x8_wiringpi_gpio_and_delay(u8x8_t *u8x8, uint8_t msg, uint8_t a
 static uint8_t u8x8_byte_wiringpi_hw_spi(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr);
 #endif
 
+namespace
+{
+    std::unique_ptr<SPIClassRP2040> spi0Remapped;
+}
+
 extern "C" {
 extern uint8_t u8x8_d_st7586s_erc240160_chunked(
     u8x8_t *u8x8,
@@ -22,11 +30,112 @@ extern uint8_t u8x8_d_st7586s_erc240160_chunked(
 );
 }
 
+extern "C" uint8_t u8x8_byte_hw_spi_remap_60mhz(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr)
+{
+    uint8_t *data;
+    uint8_t internal_spi_mode;
+
+    if (!spi0Remapped) {
+        return 1;
+    }
+
+    switch (msg)
+    {
+    case U8X8_MSG_BYTE_SEND:
+
+        // 1.6.5 offers a block transfer, but the problem is, that the
+        // buffer is overwritten with the incoming data
+        // so it can not be used...
+        // SPI.transfer((uint8_t *)arg_ptr, arg_int);
+
+        data = (uint8_t *)arg_ptr;
+        while (arg_int > 0)
+        {
+            spi0Remapped->transfer((uint8_t)*data);
+            data++;
+            arg_int--;
+        }
+
+        break;
+    case U8X8_MSG_BYTE_INIT:
+        if (u8x8->bus_clock == 0) /* issue 769 */
+            u8x8->bus_clock = u8x8->display_info->sck_clock_hz;
+        /* disable chipselect */
+        u8x8_gpio_SetCS(u8x8, u8x8->display_info->chip_disable_level);
+
+        /* no wait required here */
+
+        /* for SPI: setup correct level of the clock signal */
+        // removed, use SPI.begin() instead: pinMode(11, OUTPUT);
+        // removed, use SPI.begin() instead: pinMode(13, OUTPUT);
+        // removed, use SPI.begin() instead: digitalWrite(13, u8x8_GetSPIClockPhase(u8x8));
+
+        /* setup hardware with SPI.begin() instead of previous digitalWrite() and pinMode() calls */
+        spi0Remapped->begin();
+        break;
+
+    case U8X8_MSG_BYTE_SET_DC:
+        u8x8_gpio_SetDC(u8x8, arg_int);
+        break;
+
+    case U8X8_MSG_BYTE_START_TRANSFER:
+        /* SPI mode has to be mapped to the mode of the current controller, at least Uno, Due, 101 have different SPI_MODEx values */
+        internal_spi_mode = 0;
+        switch (u8x8->display_info->spi_mode)
+        {
+        case 0:
+            internal_spi_mode = SPI_MODE0;
+            break;
+        case 1:
+            internal_spi_mode = SPI_MODE1;
+            break;
+        case 2:
+            internal_spi_mode = SPI_MODE2;
+            break;
+        case 3:
+            internal_spi_mode = SPI_MODE3;
+            break;
+        }
+
+        spi0Remapped->beginTransaction(
+            SPISettings{
+                60000000,
+                MSBFIRST,
+                internal_spi_mode
+            }
+        );
+
+        u8x8_gpio_SetCS(u8x8, u8x8->display_info->chip_enable_level);
+        u8x8->gpio_and_delay_cb(u8x8, U8X8_MSG_DELAY_NANO, u8x8->display_info->post_chip_enable_wait_ns, NULL);
+        break;
+
+    case U8X8_MSG_BYTE_END_TRANSFER:
+        u8x8->gpio_and_delay_cb(u8x8, U8X8_MSG_DELAY_NANO, u8x8->display_info->pre_chip_disable_wait_ns, NULL);
+        u8x8_gpio_SetCS(u8x8, u8x8->display_info->chip_disable_level);
+
+        spi0Remapped->endTransaction();
+
+        break;
+    default:
+        return 0;
+    }
+
+    return 1;
+}
+
 namespace Pins
 {
-    constexpr auto CS = PIN_SPI0_SS;
-    constexpr auto DC = 21;
-    constexpr auto RST = 20;
+    constexpr auto CS = 5;
+    constexpr auto DC = 8;
+    constexpr auto RST = 9;
+
+    namespace SPI0
+    {
+        constexpr auto RX = 6;
+        constexpr auto CS = 5;
+        constexpr auto SCK = 6;
+        constexpr auto TX = 7;
+    }
 }
 
 struct Display::Private
@@ -177,6 +286,16 @@ void Display::setup()
     uint8_t tileBufHeight;
     uint8_t* buf;
 
+    spi0Remapped.reset(
+        new SPIClassRP2040{
+            spi0,
+            Pins::SPI0::RX,
+            Pins::SPI0::CS,
+            Pins::SPI0::SCK,
+            Pins::SPI0::TX
+        }
+    );
+
     u8g2_SetupDisplay(
         &_p->u8g2,
         u8x8_d_st7586s_erc240160_chunked,
@@ -185,7 +304,7 @@ void Display::setup()
         u8x8_byte_wiringpi_hw_spi,
         u8x8_wiringpi_gpio_and_delay
 #else
-        u8x8_byte_arduino_hw_spi,
+        u8x8_byte_hw_spi_remap_60mhz,
         u8x8_gpio_and_delay_arduino
 #endif
     );
@@ -213,7 +332,7 @@ void Display::setup()
 
     u8g2_InitDisplay(&_p->u8g2);
     u8g2_SetPowerSave(&_p->u8g2, 0);
-    u8g2_SetContrast(&_p->u8g2, 60);
+    u8g2_SetContrast(&_p->u8g2, 65);
 
     Serial.printf("%s OK", __FUNCTION__);
 }
