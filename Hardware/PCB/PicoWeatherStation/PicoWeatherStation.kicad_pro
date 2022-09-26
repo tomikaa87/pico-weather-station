@@ -470,6 +470,7 @@
           "SPI_PERI_MISO",
           "SPI_PERI_MOSI",
           "SPI_PERI_SCK",
+          "TOUCH_BUSY",
           "TOUCH_~{CS}",
           "TOUCH_~{PENIRQ}",
           "ZR_OUT"
