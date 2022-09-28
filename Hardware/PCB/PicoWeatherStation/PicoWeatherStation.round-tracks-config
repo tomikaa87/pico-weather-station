@@ -1,0 +1,6 @@
+Default	False	2.0	3
+I2C signals	False	2.0	3
+LCD signals	True	2.0	3
+Power	False	2.0	3
+SPI peripheral signals	False	2.0	3
+False	True	False
