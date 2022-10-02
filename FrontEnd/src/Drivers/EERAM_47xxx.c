@@ -1,7 +1,5 @@
 #include "EERAM_47xxx.h"
 
-#include "hardware/i2c.h"
-
 static inline uint8_t calculateControlByte(
     const EERAM_47xxx_Device* const device,
     const uint8_t controlByteMask
@@ -103,8 +101,8 @@ bool EERAM_47xxx_ReadByte(
     return EERAM_47xxx_ReadBuffer(
         device,
         address,
-        &byte,
-        sizeof(byte)
+        byte,
+        sizeof(uint8_t)
     );
 }
 
@@ -282,7 +280,7 @@ bool EERAM_47xxx_ReadControlRegister(
         return false;
     }
 
-    if (!device->i2cRead(&output, false)) {
+    if (!device->i2cRead(output, false)) {
         return false;
     }
 
