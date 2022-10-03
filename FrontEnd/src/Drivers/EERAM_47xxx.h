@@ -39,26 +39,6 @@ typedef struct
     EERAM_47xxx_I2CEndTransactionFunc i2cEndTransaction;
 } EERAM_47xxx_Device;
 
-enum
-{
-    EERAM_47xxx_CTRL_SRAM_READ_MASK = 0b10100001,
-    EERAM_47xxx_CTRL_SRAM_WRITE_MASK = 0b10100000,
-    EERAM_47xxx_CTRL_REG_READ_MASK = 0b00110001,
-    EERAM_47xxx_CTRL_REG_WRITE_MASK = 0b00110000,
-
-    EERAM_47xxx_REG_STATUS = 0x00,
-    EERAM_47xxx_REG_COMMAND = 0x55,
-
-    EERAM_47xxx_STATUS_BIT_EVENT = 1 << 0,
-    EERAM_47xxx_STATUS_BIT_ASE = 1 << 1,
-    EERAM_47xxx_STATUS_BIT_BP0 = 1 << 2,
-    EERAM_47xxx_STATUS_BIT_BP1 = 1 << 3,
-    EERAM_47xxx_STATUS_BIT_BP2 = 1 << 4,
-    EERAM_47xxx_STATUS_BIT_AM = 1 << 7,
-
-    EERAM_47xxx_BP_BIT_MASK = 0b111,
-};
-
 typedef enum
 {
     EERAM_47xxx_BP_NONE = 0b000,
