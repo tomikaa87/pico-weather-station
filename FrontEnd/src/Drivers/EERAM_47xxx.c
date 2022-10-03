@@ -266,6 +266,22 @@ bool EERAM_47xxx_ClearEVENT(
     return true;
 }
 
+bool EERAM_47xxx_GetEVENT(
+    const EERAM_47xxx_Device* device,
+    bool* output
+)
+{
+    uint8_t status = 0;
+
+    if (!EERAM_47xxx_ReadControlRegister(device, &status)) {
+        return false;
+    }
+
+    *output = status & EERAM_47xxx_STATUS_BIT_EVENT > 0;
+
+    return true;
+}
+
 bool EERAM_47xxx_ReadControlRegister(
     const EERAM_47xxx_Device* const device,
     uint8_t* const output

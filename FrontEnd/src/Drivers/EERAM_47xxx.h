@@ -132,6 +132,11 @@ bool EERAM_47xxx_ClearEVENT(
     const EERAM_47xxx_Device* device
 );
 
+bool EERAM_47xxx_GetEVENT(
+    const EERAM_47xxx_Device* device,
+    bool* output
+);
+
 bool EERAM_47xxx_ReadControlRegister(
     const EERAM_47xxx_Device* device,
     uint8_t* output
