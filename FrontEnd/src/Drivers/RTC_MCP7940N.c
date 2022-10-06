@@ -16,6 +16,16 @@ enum
     RTC_MCP7940N_REG_TIME_CONTROL,
     RTC_MCP7940N_REG_TIME_OSCTRIM,
 
+    // CONTROL flags
+    RTC_MCP7940N_REG_CONTROL_SQWFS0 = 1 << 0,
+    RTC_MCP7940N_REG_CONTROL_SQWFS1 = 1 << 1,
+    RTC_MCP7940N_REG_CONTROL_CRSTRIM = 1 << 2,
+    RTC_MCP7940N_REG_CONTROL_EXTOSC = 1 << 3,
+    RTC_MCP7940N_REG_CONTROL_ALM0EN = 1 << 4,
+    RTC_MCP7940N_REG_CONTROL_ALM1EN = 1 << 5,
+    RTC_MCP7940N_REG_CONTROL_SQWEN = 1 << 6,
+    RTC_MCP7940N_REG_CONTROL_OUT = 1 << 7,
+
     // Alarm 0
     RTC_MCP7940N_REG_ALARM_ALM0SEC = 0x0A,
     RTC_MCP7940N_REG_ALARM_ALM0MIN,
@@ -108,6 +118,45 @@ static bool writeMemory(
     }
 
     if (!device->i2cEndTransaction()) {
+        return false;
+    }
+
+    return true;
+}
+
+bool changeControlFlags(
+    const RTC_MCP7940N_Device* const device,
+    const uint8_t flags,
+    const bool set
+)
+{
+    uint8_t control = 0;
+
+    if (
+        !readMemory(
+            device,
+            RTC_MCP7940N_REG_TIME_CONTROL,
+            &control,
+            sizeof(control)
+        )
+    ) {
+        return false;
+    }
+
+    if (set) {
+        control |= flags;
+    } else {
+        control &= ~flags;
+    }
+
+    if (
+        !writeMemory(
+            device,
+            RTC_MCP7940N_REG_TIME_CONTROL,
+            &control,
+            sizeof(control)
+        )
+    ) {
         return false;
     }
 
@@ -286,6 +335,175 @@ bool RTC_MCP7940N_GetDateTime(
     *month = ((regs[5] & (1 << 4)) >> 4) * 10 + regs[5] & 0b1111;
 
     *year = ((regs[6] & (0b1111 << 4)) >> 4) * 10 + regs[6] & 0b1111;
+
+    return true;
+}
+
+bool RTC_MCP7940N_SetAlarm(
+    const RTC_MCP7940N_Device* const device,
+    const RTC_MCP7940N_Alarm alarm,
+    const RTC_MCP7940N_AlarmMask mask,
+    const RTC_MCP7940N_AlarmPolarity polarity,
+    const uint8_t month,
+    const uint8_t date,
+    const uint8_t weekday,
+    const uint8_t hour,
+    const uint8_t minute,
+    const uint8_t second,
+    const bool mode12h,
+    const bool pm
+)
+{
+    if (alarm > RTC_MCP7940N_ALARM_1) {
+        return false;
+    }
+
+    uint8_t regs[6] = { 0 };
+
+    // ALMxSEC
+    regs[0] = second % 10 | ((second / 10) & 0b111) << 4;
+
+    // ALMxMIN
+    regs[1] = minute % 10 | ((minute / 10) & 0b111) << 4;
+
+    // ALMxHOUR
+    regs[2] =
+        // 12/!24
+        (mode12h ? 1 << 6 : 0)
+        // !AM/PM
+        | (mode12h && pm ? 1 << 5 : 0)
+        // HRONE
+        | hour % 10
+        // HRTEN
+        | (
+            mode12h
+                ? ((hour / 10) & 0b1) << 4
+                : ((hour / 10) & 0b11) << 4
+        );
+
+    // ALMxWKDAY
+    regs[3] =
+        // WKDAY
+        weekday & 0b111
+        // ALMxMSK
+        | (mask & 0b111) << 4
+        // ALMPOL
+        | (polarity & 0b1) << 7;
+
+    // ALMxDATE
+    regs[4] = date % 10 | ((date / 10) & 0b11) << 4;
+
+    // ALMxMTH
+    regs[5] = month % 10 | ((month / 10) & 0b1) << 4;
+
+    const uint8_t baseAddress =
+        alarm == RTC_MCP7940N_ALARM_1 ? 0x11 : 0x0A;
+
+    if (
+        !writeMemory(
+            device,
+            baseAddress,
+            regs,
+            sizeof(regs)
+        )
+    ) {
+        return false;
+    }
+
+    return true;
+}
+
+bool RTC_MCP7940N_SetAlarmEnabled(
+    const RTC_MCP7940N_Device* device,
+    RTC_MCP7940N_Alarm alarm,
+    bool enabled
+)
+{
+    if (alarm > RTC_MCP7940N_ALARM_1) {
+        return false;
+    }
+
+    return changeControlFlags(
+        device,
+        alarm == RTC_MCP7940N_ALARM_1
+            ? RTC_MCP7940N_REG_CONTROL_ALM1EN
+            : RTC_MCP7940N_REG_CONTROL_ALM0EN,
+        enabled
+    );
+}
+
+bool RTC_MCP7940N_GetAlarmInterruptFlag(
+    const RTC_MCP7940N_Device* device,
+    const RTC_MCP7940N_Alarm alarm,
+    bool* const value
+)
+{
+    if (alarm > RTC_MCP7940N_ALARM_1) {
+        return false;
+    }
+
+    uint8_t wkday = 0;
+
+    const uint8_t address =
+        alarm == RTC_MCP7940N_ALARM_1
+            ? RTC_MCP7940N_REG_ALARM_ALM1WKDAY
+            : RTC_MCP7940N_REG_ALARM_ALM0WKDAY;
+
+    if (
+        !readMemory(
+            device,
+            address,
+            &wkday,
+            sizeof(wkday)
+        )
+    ) {
+        return false;
+    }
+
+    *value = wkday & (1 << 3) > 0;
+
+    return true;
+}
+
+bool RTC_MCP7940N_ClearAlarmInterruptFlag(
+    const RTC_MCP7940N_Device* device,
+    const RTC_MCP7940N_Alarm alarm
+)
+{
+    if (alarm > RTC_MCP7940N_ALARM_1) {
+        return false;
+    }
+    
+    uint8_t wkday = 0;
+
+    const uint8_t address =
+        alarm == RTC_MCP7940N_ALARM_1
+            ? RTC_MCP7940N_REG_ALARM_ALM1WKDAY
+            : RTC_MCP7940N_REG_ALARM_ALM0WKDAY;
+
+    if (
+        !readMemory(
+            device,
+            address,
+            &wkday,
+            sizeof(wkday)
+        )
+    ) {
+        return false;
+    }
+
+    wkday &= ~(1 << 3);
+
+    if (
+        !writeMemory(
+            device,
+            address,
+            &wkday,
+            sizeof(wkday)
+        )
+    ) {
+        return false;
+    }
 
     return true;
 }
