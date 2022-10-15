@@ -75,6 +75,8 @@ public:
         : Widget{ display.get() }
         , _titleLabel{ "Pico Weather Station - Diagnostics", this }
         , _bme280Label{ this }
+        , _nrf24Label{ this }
+        , _nrf24FifoLabel{ this }
     {
         setRect(Rect{ 0, 0, 240, 160 });
 
@@ -92,6 +94,11 @@ public:
 
         _bme280Label.setRect(getNextLineRect());
         setupLabel(_bme280Label);
+
+        _nrf24Label.setRect(getNextLineRect());
+        _nrf24FifoLabel.setRect(getNextLineRect());
+        setupLabel(_nrf24Label);
+        setupLabel(_nrf24FifoLabel);
     }
 
     void updateBme280Data(const struct bme280_data& data)
@@ -107,9 +114,39 @@ public:
         );
     }
 
+    void updateNrf24Data()
+    {
+        const auto status = nrf24_get_status(&nrf);
+        const auto fifoStatus = nrf24_get_fifo_status(&nrf);
+
+        _nrf24Label.setText(
+            fmt::format(
+                "NRF24: TXF={},RPN={},MR={},TD={},RD={}",
+                status.TX_FULL,
+                status.RX_P_NO,
+                status.MAX_RT,
+                status.TX_DS,
+                status.RX_DR
+            )
+        );
+
+        _nrf24FifoLabel.setText(
+            fmt::format(
+                "NRF24: RXE={},RXF={},TXE={},TXF={},TXR={}",
+                fifoStatus.RX_EMPTY,
+                fifoStatus.RX_FULL,
+                fifoStatus.TX_EMPTY,
+                fifoStatus.TX_FULL,
+                fifoStatus.TX_REUSE
+            )
+        );
+    }
+
 private:
     Label _titleLabel;
     Label _bme280Label;
+    Label _nrf24Label;
+    Label _nrf24FifoLabel;
 
     void setupLabel(Label& label)
     {
@@ -508,6 +545,7 @@ void loop()
         Serial.println(PSTR("Painting diagnostics screen"));
 
         stream_sensor_data_forced_mode(&bme);
+        diagScreen->updateNrf24Data();
 
         Painter painter;
         painter.paintWidget(diagScreen.get());
