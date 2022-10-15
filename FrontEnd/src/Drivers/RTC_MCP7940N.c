@@ -415,7 +415,7 @@ bool RTC_MCP7940N_SetAlarm(
 
 bool RTC_MCP7940N_SetAlarmEnabled(
     const RTC_MCP7940N_Device* device,
-    RTC_MCP7940N_Alarm alarm,
+    const RTC_MCP7940N_Alarm alarm,
     bool enabled
 )
 {

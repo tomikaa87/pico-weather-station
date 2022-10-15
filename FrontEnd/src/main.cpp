@@ -17,9 +17,13 @@
 #include <fmt/core.h>
 
 #include <SPI.h>
+#include <Wire.h>
 
 #include "nrf24.h"
 #include "bme280.h"
+
+#include <hardware/gpio.h>
+#include <hardware/i2c.h>
 
 #ifdef RASPBERRY_PI
 #include <thread>
@@ -34,7 +38,10 @@ using namespace std::chrono_literals;
 
 // #include <fmt/core.h>
 
-#define ENABLE_DRAW_TEST 1
+#define ENABLE_DRAW_TEST 0
+#define ENABLE_DIAG_SCREEN 1
+
+class DiagScreen;
 
 namespace
 {
@@ -53,10 +60,67 @@ namespace
     auto updateLedOn = true;
 
     std::unique_ptr<SPIClassRP2040> spiPeri;
+    std::unique_ptr<TwoWire> i2c;
     nrf24_t nrf;
     struct bme280_dev bme;
     int bmeInitResult = 0;
+
+    std::unique_ptr<DiagScreen> diagScreen;
 }
+
+class DiagScreen : public Widget
+{
+public:
+    DiagScreen()
+        : Widget{ display.get() }
+        , _titleLabel{ "Pico Weather Station - Diagnostics", this }
+        , _bme280Label{ this }
+    {
+        setRect(Rect{ 0, 0, 240, 160 });
+
+        auto nextLineY = 0;
+        auto getNextLineRect = [&nextLineY] {
+            const auto y = nextLineY;
+            nextLineY += 10;
+            return Rect{ 0, y, 240, 10 };
+        };
+
+        _titleLabel.setRect(getNextLineRect());
+        _titleLabel.setFont(Font{ Font::Family::BitCell });
+
+        nextLineY = 20;
+
+        _bme280Label.setRect(getNextLineRect());
+        setupLabel(_bme280Label);
+    }
+
+    void updateBme280Data(const struct bme280_data& data)
+    {
+        _bme280Label.setText(
+            fmt::format(
+                "BME280: init={}, t={:0.2f}C, p={:0.2f}hPa, h={:0.2f}%",
+                bmeInitResult,
+                data.temperature,
+                data.pressure * 0.01,
+                data.humidity
+            )
+        );
+    }
+
+private:
+    Label _titleLabel;
+    Label _bme280Label;
+
+    void setupLabel(Label& label)
+    {
+        label.setFont(
+            Font{
+                Font::Family::PfTempesta7,
+                Font::Style::Condensed
+            }
+        );
+    }
+};
 
 namespace Pins
 {
@@ -70,6 +134,12 @@ namespace Pins
         constexpr auto IRQ = 16;
         constexpr auto CE = 17;
         constexpr auto CSN = 18;
+    }
+
+    namespace Touch
+    {
+        constexpr auto CS = 14;
+        constexpr auto PENIRQ = 13;
     }
 
     namespace SPIPeri
@@ -247,7 +317,7 @@ int8_t stream_sensor_data_forced_mode(struct bme280_dev *dev)
         return rslt;
     }
 
-    Serial.printf("Temperature, Pressure, Humidity\r\n");
+    // Serial.printf("Temperature, Pressure, Humidity\r\n");
 
     /*Calculate the minimum delay required between consecutive measurement based upon the sensor enabled
      *  and the oversampling configuration. */
@@ -273,7 +343,10 @@ int8_t stream_sensor_data_forced_mode(struct bme280_dev *dev)
             break;
         }
 
-        print_sensor_data(&comp_data);
+        // print_sensor_data(&comp_data);
+
+        diagScreen->updateBme280Data(comp_data);
+
         break;
     }
 
@@ -284,10 +357,14 @@ void setup()
 {
     Serial.begin();
 
-    pinMode(LED_BUILTIN, OUTPUT);
-    digitalWrite(LED_BUILTIN, HIGH);
+    delay(5000);
+
+    Serial.println(PSTR("Initializing..."));
 
     display = std::make_unique<Display>();
+    display->clear();
+
+#if 0
     weatherStation = std::make_unique<Screens::WeatherStation>(display.get());
     painter = std::make_unique<Painter>();
 
@@ -303,8 +380,7 @@ void setup()
     weatherStation->setInternalSensorTemperature(88.8);
     weatherStation->setClockTime(12, 34);
     weatherStation->setClockDate(23, "Wed");
-
-    digitalWrite(LED_BUILTIN, LOW);
+#endif
 
     spiPeri.reset(
         new SPIClassRP2040{
@@ -316,24 +392,36 @@ void setup()
         }
     );
 
+    i2c.reset(
+        new TwoWire{
+            i2c0,
+            20,
+            21
+        }
+    );
+
+    i2c->begin();
+
     spiPeri->begin();
 
-    // spiPeri->beginTransaction(
-    //     SPISettings{
-    //         4000000,
-    //         MSBFIRST,
-    //         SPI_MODE0
-    //     }
-    // );
+    spiPeri->beginTransaction(
+        SPISettings{
+            4000000,
+            MSBFIRST,
+            SPI_MODE0
+        }
+    );
 
-    pinMode(Pins::BME280::CSB, OUTPUT);
-    digitalWrite(Pins::BME280::CSB, HIGH);
+    // pinMode(Pins::BME280::CSB, OUTPUT);
+    // digitalWrite(Pins::BME280::CSB, HIGH);
 
     pinMode(Pins::NRF24::CE, OUTPUT);
     digitalWrite(Pins::NRF24::CE, HIGH);
     pinMode(Pins::NRF24::CSN, OUTPUT);
     digitalWrite(Pins::NRF24::CSN, HIGH);
     pinMode(Pins::NRF24::IRQ, INPUT_PULLDOWN);
+    pinMode(Pins::Touch::CS, OUTPUT);
+    digitalWrite(Pins::Touch::CS, HIGH);
 
     nrf24_init(
         &nrf,
@@ -370,17 +458,18 @@ void setup()
 
     nrf24_clear_interrupts(&nrf);
 
-    bme.intf = BME280_SPI_INTF;
+    bme.intf = BME280_I2C_INTF;
     bme.read = [](
         const uint8_t reg_addr,
         uint8_t* const reg_data,
         const uint32_t len,
         [[maybe_unused]] void* const intf_ptr
     ) -> BME280_INTF_RET_TYPE {
-        digitalWrite(Pins::BME280::CSB, LOW);
-        spiPeri->transfer(reg_addr);
-        spiPeri->transfer(reg_data, len);
-        digitalWrite(Pins::BME280::CSB, HIGH);
+        i2c->beginTransmission(BME280_I2C_ADDR_PRIM);
+        i2c->write(reg_addr);
+        i2c->endTransmission();
+        const auto readLength = i2c->requestFrom(BME280_I2C_ADDR_PRIM, len);
+        i2c->readBytes(reg_data, readLength);
         return BME280_INTF_RET_SUCCESS;
     };
     bme.write = [](
@@ -389,10 +478,10 @@ void setup()
         const uint32_t len,
         [[maybe_unused]] void* const intf_ptr
     ) -> BME280_INTF_RET_TYPE {
-        digitalWrite(Pins::BME280::CSB, LOW);
-        spiPeri->transfer(reg_addr);
-        spiPeri->transfer(const_cast<uint8_t*>(reg_data), len);
-        digitalWrite(Pins::BME280::CSB, HIGH);
+        i2c->beginTransmission(BME280_I2C_ADDR_PRIM);
+        i2c->write(reg_addr);
+        i2c->write(reg_data, len);
+        i2c->endTransmission();
         return BME280_INTF_RET_SUCCESS;
     };
     bme.delay_us = [](
@@ -402,13 +491,32 @@ void setup()
         delayMicroseconds(period);
     };
     bmeInitResult = bme280_init(&bme);
+
+    diagScreen = std::make_unique<DiagScreen>();
+
+    Serial.println(PSTR("Initialization finished"));
 }
 
 void loop()
 {
+#if ENABLE_DIAG_SCREEN
+    static auto updateMillis = 0u;
+
+    if (millis() - updateMillis >= 1000) {
+        updateMillis = millis();
+
+        Serial.println(PSTR("Painting diagnostics screen"));
+
+        stream_sensor_data_forced_mode(&bme);
+
+        Painter painter;
+        painter.paintWidget(diagScreen.get());
+    }
+#endif
+
 #if ENABLE_DRAW_TEST
-    Serial.println("Running display test");
     Serial.printf("BME280 init result: %d\r\n", bmeInitResult);
+    Serial.println("Running display test");
 
     display->clear();
 
@@ -423,8 +531,10 @@ void loop()
     }
 
     nrf24_dump_registers(&nrf);
-    stream_sensor_data_forced_mode(&bme);
-#else
+    // stream_sensor_data_forced_mode(&bme);
+#endif
+
+#if 0
     if (millis() - lastUpdateMillis >= 500) {
         lastUpdateMillis = millis();
 

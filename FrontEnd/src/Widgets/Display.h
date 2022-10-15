@@ -29,6 +29,7 @@ public:
     void update();
 
     void setContrast(uint8_t value);
+    void setBacklightLevel(uint8_t value);
     void setDrawColor(Color color);
     void setFont(const Font& font);
     void setClipRect(const Rect& rect);

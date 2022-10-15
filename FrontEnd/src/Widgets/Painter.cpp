@@ -6,6 +6,8 @@
 #include <iostream>
 #include <functional>
 
+#define DEBUG_PAINTER 1
+
 Painter::Painter()
 {}
 

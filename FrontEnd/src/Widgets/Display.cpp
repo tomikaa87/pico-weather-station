@@ -129,9 +129,11 @@ namespace Pins
     constexpr auto DC = 8;
     constexpr auto RST = 9;
 
+    constexpr auto BacklightPwm = 0;
+
     namespace SPI0
     {
-        constexpr auto RX = 6;
+        constexpr auto RX = 4;
         constexpr auto CS = 5;
         constexpr auto SCK = 6;
         constexpr auto TX = 7;
@@ -178,6 +180,11 @@ void Display::update()
 void Display::setContrast(const uint8_t value)
 {
     u8g2_SetContrast(&_p->u8g2, value);
+}
+
+void Display::setBacklightLevel(const uint8_t value)
+{
+    analogWrite(Pins::BacklightPwm, value);
 }
 
 void Display::setDrawColor(const Color color)
@@ -328,11 +335,15 @@ void Display::setup()
     u8x8_SetPin(u8g2_GetU8x8(&_p->u8g2), U8X8_PIN_CS, Pins::CS);
     u8x8_SetPin(u8g2_GetU8x8(&_p->u8g2), U8X8_PIN_DC, Pins::DC);
     u8x8_SetPin(u8g2_GetU8x8(&_p->u8g2), U8X8_PIN_RESET, Pins::RST);
+
+    pinMode(Pins::BacklightPwm, OUTPUT);
+    analogWriteFreq(500'000);
+    setBacklightLevel(60);
 #endif
 
     u8g2_InitDisplay(&_p->u8g2);
     u8g2_SetPowerSave(&_p->u8g2, 0);
-    u8g2_SetContrast(&_p->u8g2, 65);
+    u8g2_SetContrast(&_p->u8g2, 60);
 
     Serial.printf("%s OK", __FUNCTION__);
 }
