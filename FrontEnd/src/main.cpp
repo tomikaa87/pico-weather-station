@@ -43,6 +43,18 @@ using namespace std::chrono_literals;
 
 class DiagScreen;
 
+struct TouchPanelControllerData
+{
+    struct Raw
+    {
+        int16_t z1 = 0;
+        int16_t z2 = 0;
+        int16_t x = 0;
+        int16_t y = 0;
+        int16_t temp = 0;
+    } raw;
+};
+
 namespace
 {
     std::unique_ptr<Display> display;
@@ -77,6 +89,7 @@ public:
         , _bme280Label{ this }
         , _nrf24Label{ this }
         , _nrf24FifoLabel{ this }
+        , _touchPanelLabel{ this }
     {
         setRect(Rect{ 0, 0, 240, 160 });
 
@@ -99,6 +112,9 @@ public:
         _nrf24FifoLabel.setRect(getNextLineRect());
         setupLabel(_nrf24Label);
         setupLabel(_nrf24FifoLabel);
+
+        _touchPanelLabel.setRect(getNextLineRect());
+        setupLabel(_touchPanelLabel);
     }
 
     void updateBme280Data(const struct bme280_data& data)
@@ -142,11 +158,26 @@ public:
         );
     }
 
+    void updateTouchPanelControllerData(const TouchPanelControllerData& data)
+    {
+        _touchPanelLabel.setText(
+            fmt::format(
+                "Touch: Z1={}, Z2={}, X={}, Y={}, Tmp={}",
+                data.raw.z1,
+                data.raw.z2,
+                data.raw.x,
+                data.raw.y,
+                data.raw.temp
+            )
+        );
+    }
+
 private:
     Label _titleLabel;
     Label _bme280Label;
     Label _nrf24Label;
     Label _nrf24FifoLabel;
+    Label _touchPanelLabel;
 
     void setupLabel(Label& label)
     {
@@ -175,8 +206,9 @@ namespace Pins
 
     namespace Touch
     {
-        constexpr auto CS = 14;
         constexpr auto PENIRQ = 13;
+        constexpr auto CS = 14;
+        constexpr auto BUSY = 15;
     }
 
     namespace SPIPeri
@@ -390,16 +422,67 @@ int8_t stream_sensor_data_forced_mode(struct bme280_dev *dev)
     return rslt;
 }
 
+TouchPanelControllerData readTouchPanelController()
+{
+    auto readAdc = [](const uint8_t ctrl) -> int16_t {
+        digitalWrite(Pins::Touch::CS, LOW);
+
+        spiPeri->transfer(ctrl);
+
+        // FIXME figure out the BUSY signal
+        delayMicroseconds(10);
+
+        // auto count = 0;
+        // while (digitalRead(Pins::Touch::BUSY) == HIGH && count < 1000) {
+        //     delayMicroseconds(1);
+        //     ++count;
+        // }
+
+        // if (count >= 500) {
+        //     return -1;
+        // }
+        
+        uint8_t data[2] = { 0 };
+        spiPeri->transfer(data, 2);
+
+        digitalWrite(Pins::Touch::CS, HIGH);
+
+        return (static_cast<int16_t>(data[0]) << 8 | data[1]) >> 3;
+        // return ((data[0] << 8) | data[1]) >> 3;
+    };
+
+    // A2 A1 A0
+    //  0  0  1 -> XP+IN Y-position
+    //  0  1  1 -> XP+IN Z1-position
+    //  1  0  0 -> YN+IN Z2-position
+    //  1  0  1 -> YP+IN X-position
+
+    // Control byte:
+    //      S A2 A1 A0 MODE SFR/nDFR PD1 PD0
+    // B1 = 1  0  1  1    0        0   0   1
+
+    return TouchPanelControllerData{
+        .raw = TouchPanelControllerData::Raw{
+            .z1 =   readAdc(0b10110011),
+            .z2 =   readAdc(0b11000011),
+            .x =    readAdc(0b11010011),
+            .y =    readAdc(0b10010011),
+            .temp = readAdc(0b10000111)
+        }
+    };
+}
+
 void setup()
 {
     Serial.begin();
 
-    delay(5000);
+    // delay(5000);
 
     Serial.println(PSTR("Initializing..."));
 
     display = std::make_unique<Display>();
     display->clear();
+    display->setBacklightLevel(40);
 
 #if 0
     weatherStation = std::make_unique<Screens::WeatherStation>(display.get());
@@ -457,8 +540,6 @@ void setup()
     pinMode(Pins::NRF24::CSN, OUTPUT);
     digitalWrite(Pins::NRF24::CSN, HIGH);
     pinMode(Pins::NRF24::IRQ, INPUT_PULLDOWN);
-    pinMode(Pins::Touch::CS, OUTPUT);
-    digitalWrite(Pins::Touch::CS, HIGH);
 
     nrf24_init(
         &nrf,
@@ -529,6 +610,12 @@ void setup()
     };
     bmeInitResult = bme280_init(&bme);
 
+    // Touch controller pins
+    pinMode(Pins::Touch::CS, OUTPUT);
+    digitalWrite(Pins::Touch::CS, HIGH);
+    pinMode(Pins::Touch::PENIRQ, INPUT);
+    pinMode(Pins::Touch::BUSY, INPUT_PULLDOWN);
+
     diagScreen = std::make_unique<DiagScreen>();
 
     Serial.println(PSTR("Initialization finished"));
@@ -546,6 +633,7 @@ void loop()
 
         stream_sensor_data_forced_mode(&bme);
         diagScreen->updateNrf24Data();
+        diagScreen->updateTouchPanelControllerData(readTouchPanelController());
 
         Painter painter;
         painter.paintWidget(diagScreen.get());
