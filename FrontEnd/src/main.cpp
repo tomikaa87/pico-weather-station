@@ -121,7 +121,7 @@ public:
 
         _nrf24Label.setText(
             fmt::format(
-                "NRF24: TXF={},RPN={},MR={},TD={},RD={}",
+                "NRF24: TX_FULL={},RX_P_NO={},MAX_RT={},TX_DS={},RX_DR={}",
                 status.TX_FULL,
                 status.RX_P_NO,
                 status.MAX_RT,
@@ -132,7 +132,7 @@ public:
 
         _nrf24FifoLabel.setText(
             fmt::format(
-                "NRF24: RXE={},RXF={},TXE={},TXF={},TXR={}",
+                "NRF24: RX_E={},RX_F={},TX_E={},TX_F={},TX_REUSE={}",
                 fifoStatus.RX_EMPTY,
                 fifoStatus.RX_FULL,
                 fifoStatus.TX_EMPTY,
