@@ -13,15 +13,18 @@ typedef bool (* RTC_MCP7940N_I2CStartTransactionFunc)(
     uint8_t address
 );
 
-// I2C Write: writes 1 byte to the bus
+// I2C Write: writes n byte(s) to the bus
 typedef bool (* RTC_MCP7940N_I2CWrite)(
-    uint8_t data
+    const uint8_t* data,
+    size_t length,
+    bool noStop
 );
 
-// I2C Read: reads 1 byte from the bus
+// I2C Read: reads `length` byte(s) from the bus
 typedef bool (* RTC_MCP7940N_I2CRead)(
     uint8_t* data,
-    bool ack
+    size_t length,
+    bool noStop
 );
 
 // I2C End Transaction: STOP
@@ -53,9 +56,17 @@ typedef enum
 
 typedef enum
 {
-    RTC_MCP7940N_ALARM_POLARITY_HIGH,
     RTC_MCP7940N_ALARM_POLARITY_LOW,
+    RTC_MCP7940N_ALARM_POLARITY_HIGH
 } RTC_MCP7940N_AlarmPolarity;
+
+typedef enum
+{
+    RTC_MCP7940N_SWQOUT_FREQ_1HZ,
+    RTC_MCP7940N_SWQOUT_FREQ_4096HZ,
+    RTC_MCP7940N_SWQOUT_FREQ_8192HZ,
+    RTC_MCP7940N_SWQOUT_FREQ_32768HZ
+} RTC_MCP7940N_SQWOutputFreq;
 
 bool RTC_MCP7940N_SetDateTime(
     const RTC_MCP7940N_Device* device,
@@ -81,6 +92,11 @@ bool RTC_MCP7940N_GetDateTime(
     uint8_t* second,
     bool* mode12h,
     bool* pm
+);
+
+bool RTC_MCP7940N_GetLeapYearFlag(
+    const RTC_MCP7940N_Device* device,
+    bool* value
 );
 
 bool RTC_MCP7940N_SetAlarm(
@@ -113,6 +129,65 @@ bool RTC_MCP7940N_GetAlarmInterruptFlag(
 bool RTC_MCP7940N_ClearAlarmInterruptFlag(
     const RTC_MCP7940N_Device* device,
     RTC_MCP7940N_Alarm alarm
+);
+
+bool RTC_MCP7940N_ReadSRAM(
+    const RTC_MCP7940N_Device* device,
+    uint8_t address,
+    uint8_t* buffer,
+    uint8_t length
+);
+
+bool RTC_MCP7940N_WriteSRAM(
+    const RTC_MCP7940N_Device* device,
+    uint8_t address,
+    const uint8_t* buffer,
+    uint8_t length
+);
+
+bool RTC_MCP7940N_SetSquareWaveOutputFrequency(
+    const RTC_MCP7940N_Device* device,
+    RTC_MCP7940N_SQWOutputFreq frequency
+);
+
+bool RTC_MCP7940N_SetSquareWaveOutputEnabled(
+    const RTC_MCP7940N_Device* device,
+    bool enabled
+);
+
+bool RTC_MCP7940N_SetCoarseTrimmingEnabled(
+    const RTC_MCP7940N_Device* device,
+    bool enabled
+);
+
+bool RTC_MCP7940N_SetExternalOscillatorEnabled(
+    const RTC_MCP7940N_Device* device,
+    bool enabled
+);
+
+bool RTC_MCP7940N_SetOscillatorDigitalTrimming(
+    const RTC_MCP7940N_Device* device,
+    uint8_t value,
+    bool subtract
+);
+
+bool RTC_MCP7940N_SetBatteryBackupEnabled(
+    const RTC_MCP7940N_Device* device,
+    bool enabled
+);
+
+bool RTC_MCP7940N_ClearPowerFailStatus(
+    const RTC_MCP7940N_Device* device
+);
+
+bool RTC_MCP7940N_GetOscillatorRunningFlag(
+    const RTC_MCP7940N_Device* device,
+    bool* value
+);
+
+bool RTC_MCP7940N_SetGeneralPurposeOutput(
+    const RTC_MCP7940N_Device* device,
+    bool high
 );
 
 #ifdef __cplusplus
