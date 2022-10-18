@@ -68,6 +68,12 @@ typedef enum
     RTC_MCP7940N_SWQOUT_FREQ_32768HZ
 } RTC_MCP7940N_SQWOutputFreq;
 
+typedef enum
+{
+    RTC_MCP7940N_POWER_DOWN_TIMESTAMP,
+    RTC_MCP7940N_POWER_UP_TIMESTAMP
+} RTC_MCP7940N_PowerFailTimeStampType;
+
 bool RTC_MCP7940N_SetDateTime(
     const RTC_MCP7940N_Device* device,
     uint8_t year,
@@ -188,6 +194,18 @@ bool RTC_MCP7940N_GetOscillatorRunningFlag(
 bool RTC_MCP7940N_SetGeneralPurposeOutput(
     const RTC_MCP7940N_Device* device,
     bool high
+);
+
+bool RTC_MCP7940N_GetPowerFailTimeStamp(
+    const RTC_MCP7940N_Device* device,
+    RTC_MCP7940N_PowerFailTimeStampType type,
+    uint8_t* minute,
+    uint8_t* hour,
+    uint8_t* date,
+    uint8_t* weekday,
+    uint8_t* month,
+    bool* mode12h,
+    bool* pm
 );
 
 #ifdef __cplusplus

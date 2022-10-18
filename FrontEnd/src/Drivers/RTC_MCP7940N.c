@@ -704,3 +704,58 @@ bool RTC_MCP7940N_SetGeneralPurposeOutput(
         RTC_MCP7940N_REG_CONTROL_OUT
     );
 }
+
+bool RTC_MCP7940N_GetPowerFailTimeStamp(
+    const RTC_MCP7940N_Device* const device,
+    const RTC_MCP7940N_PowerFailTimeStampType type,
+    uint8_t* const minute,
+    uint8_t* const hour,
+    uint8_t* const date,
+    uint8_t* const weekday,
+    uint8_t* const month,
+    bool* const mode12h,
+    bool* const pm
+)
+{
+    if (type > RTC_MCP7940N_POWER_UP_TIMESTAMP) {
+        return false;
+    }
+
+    uint8_t baseAddress =
+        type == RTC_MCP7940N_POWER_UP_TIMESTAMP
+            ? RTC_MCP7940N_REG_PWRUPMIN
+            : RTC_MCP7940N_REG_PWRDNMIN;
+
+    uint8_t regs[4] = { 0 };
+
+    if (
+        !readMemory(
+            device,
+            baseAddress,
+            regs,
+            sizeof(regs)
+        )
+    ) {
+        return false;
+    }
+
+    *minute = ((regs[0] & (0b111 << 4)) >> 4) * 10 + (regs[0] & 0b1111);
+
+    *mode12h = (regs[1] & (1 << 6)) > 0;
+
+    *pm = *mode12h ? (regs[1] & (1 << 5)) > 0 : false;
+
+    *hour = (regs[1] & 0b1111) + (
+        *mode12h
+            ? ((regs[1] & (1 << 4)) >> 4) * 10
+            : ((regs[1] & (0b11 << 4)) >> 4) * 10
+    );
+
+    *date = ((regs[2] & (0b11 << 4)) >> 4) * 10 + (regs[2] & 0b1111);
+
+    *weekday = (regs[3] & (0b111 << 5)) >> 5;
+
+    *month = ((regs[4] & (1 << 4)) >> 4) * 10 + (regs[4] & 0b1111);
+
+    return true;
+}
