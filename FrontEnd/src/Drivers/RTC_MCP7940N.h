@@ -9,12 +9,14 @@ extern "C" {
 #endif
 
 // I2C Start Transaction: START + write `address`
-typedef bool (* RTC_MCP7940N_I2CStartTransactionFunc)(
+typedef bool (* RTC_MCP7940N_I2CStartTransmissionFunc)(
+    void* arg,
     uint8_t address
 );
 
 // I2C Write: writes n byte(s) to the bus
 typedef bool (* RTC_MCP7940N_I2CWrite)(
+    void* arg,
     const uint8_t* data,
     size_t length,
     bool noStop
@@ -22,20 +24,22 @@ typedef bool (* RTC_MCP7940N_I2CWrite)(
 
 // I2C Read: reads `length` byte(s) from the bus
 typedef bool (* RTC_MCP7940N_I2CRead)(
+    void* arg,
     uint8_t* data,
     size_t length,
     bool noStop
 );
 
 // I2C End Transaction: STOP
-typedef bool (* RTC_MCP7940N_I2CEndTransactionFunc)();
+typedef bool (* RTC_MCP7940N_I2CEndTransmissionFunc)(void* arg);
 
 typedef struct
 {
-    RTC_MCP7940N_I2CStartTransactionFunc i2cStartTransaction;
+    void* i2cFunctionArg;
+    RTC_MCP7940N_I2CStartTransmissionFunc i2cStartTransmission;
     RTC_MCP7940N_I2CWrite i2cWrite;
     RTC_MCP7940N_I2CRead i2cRead;
-    RTC_MCP7940N_I2CEndTransactionFunc i2cEndTransaction;
+    RTC_MCP7940N_I2CEndTransmissionFunc i2cEndTransmission;
 } RTC_MCP7940N_Device;
 
 typedef enum

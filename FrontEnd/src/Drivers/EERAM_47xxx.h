@@ -9,7 +9,7 @@ extern "C" {
 #endif
 
 // I2C Start Transaction: START + write `address`
-typedef bool (* EERAM_47xxx_I2CStartTransactionFunc)(
+typedef bool (* EERAM_47xxx_I2CStartTransmissionFunc)(
     uint8_t address
 );
 
@@ -25,7 +25,7 @@ typedef bool (* EERAM_47xxx_I2CRead)(
 );
 
 // I2C End Transaction: STOP
-typedef bool (* EERAM_47xxx_I2CEndTransactionFunc)();
+typedef bool (* EERAM_47xxx_I2CEndTransmissionFunc)();
 
 typedef struct
 {
@@ -33,10 +33,10 @@ typedef struct
     int a2 : 1;
     int : 0;
 
-    EERAM_47xxx_I2CStartTransactionFunc i2cStartTransaction;
+    EERAM_47xxx_I2CStartTransmissionFunc i2cStartTransmission;
     EERAM_47xxx_I2CWrite i2cWrite;
     EERAM_47xxx_I2CRead i2cRead;
-    EERAM_47xxx_I2CEndTransactionFunc i2cEndTransaction;
+    EERAM_47xxx_I2CEndTransmissionFunc i2cEndTransmission;
 } EERAM_47xxx_Device;
 
 typedef enum

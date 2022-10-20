@@ -39,7 +39,7 @@ static bool writeRegister(
         EERAM_47xxx_CTRL_REG_WRITE_MASK
     );
 
-    if (!device->i2cStartTransaction(controlByte)) {
+    if (!device->i2cStartTransmission(controlByte)) {
         return false;
     }
 
@@ -51,7 +51,7 @@ static bool writeRegister(
         return false;
     }
 
-    if (!device->i2cEndTransaction()) {
+    if (!device->i2cEndTransmission()) {
         return false;
     }
 
@@ -84,7 +84,7 @@ bool EERAM_47xxx_WriteBuffer(
         EERAM_47xxx_CTRL_SRAM_WRITE_MASK
     );
 
-    if (!device->i2cStartTransaction(controlByte)) {
+    if (!device->i2cStartTransmission(controlByte)) {
         return false;
     }
 
@@ -105,7 +105,7 @@ bool EERAM_47xxx_WriteBuffer(
         }
     }
 
-    if (!device->i2cEndTransaction()) {
+    if (!device->i2cEndTransmission()) {
         return false;
     }
 
@@ -138,7 +138,7 @@ bool EERAM_47xxx_ReadBuffer(
         EERAM_47xxx_CTRL_SRAM_WRITE_MASK
     );
 
-    if (!device->i2cStartTransaction(writeControlByte)) {
+    if (!device->i2cStartTransmission(writeControlByte)) {
         return false;
     }
 
@@ -159,7 +159,7 @@ bool EERAM_47xxx_ReadBuffer(
     );
 
     // Repeated start condition
-    if (!device->i2cStartTransaction(readControlByte)) {
+    if (!device->i2cStartTransmission(readControlByte)) {
         return false;
     }
 
@@ -171,7 +171,7 @@ bool EERAM_47xxx_ReadBuffer(
         }
     }
 
-    if (!device->i2cEndTransaction()) {
+    if (!device->i2cEndTransmission()) {
         return false;
     }
 
@@ -312,7 +312,7 @@ bool EERAM_47xxx_ReadControlRegister(
         EERAM_47xxx_CTRL_REG_READ_MASK
     );
 
-    if (!device->i2cStartTransaction(controlByte)) {
+    if (!device->i2cStartTransmission(controlByte)) {
         return false;
     }
 
@@ -320,7 +320,7 @@ bool EERAM_47xxx_ReadControlRegister(
         return false;
     }
 
-    if (!device->i2cEndTransaction()) {
+    if (!device->i2cEndTransmission()) {
         return false;
     }
 

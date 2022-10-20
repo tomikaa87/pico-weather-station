@@ -75,22 +75,32 @@ static bool readMemory(
     const uint8_t length
 )
 {
-    if (!device->i2cStartTransaction(RTC_MCP7940N_CONTROL_BYTE)) {
+    if (
+        !device->i2cStartTransmission(
+            device->i2cFunctionArg,
+            RTC_MCP7940N_CONTROL_BYTE
+        )
+    ) {
         return false;
     }
 
-    if (!device->i2cWrite(&address, 1, true)) {
+    if (!device->i2cWrite(device->i2cFunctionArg, &address, 1, true)) {
         return false;
     }
 
     // Repeated start condition
-    if (!device->i2cStartTransaction(RTC_MCP7940N_CONTROL_BYTE)) {
+    if (
+        !device->i2cStartTransmission(
+            device->i2cFunctionArg,
+            RTC_MCP7940N_CONTROL_BYTE
+        )
+    ) {
         return false;
     }
 
-    bool ok = device->i2cRead(buffer, length, false);
+    bool ok = device->i2cRead(device->i2cFunctionArg, buffer, length, false);
 
-    if (!device->i2cEndTransaction()) {
+    if (!device->i2cEndTransmission(device->i2cFunctionArg)) {
         return false;
     }
 
@@ -104,17 +114,22 @@ static bool writeMemory(
     const uint8_t length
 )
 {
-    if (!device->i2cStartTransaction(RTC_MCP7940N_CONTROL_BYTE)) {
+    if (
+        !device->i2cStartTransmission(
+            device->i2cFunctionArg,
+            RTC_MCP7940N_CONTROL_BYTE
+        )
+    ) {
         return false;
     }
 
-    if (!device->i2cWrite(&address, 1, true)) {
+    if (!device->i2cWrite(device->i2cFunctionArg, &address, 1, true)) {
         return false;
     }
 
-    bool ok = device->i2cWrite(buffer, length, false);
+    bool ok = device->i2cWrite(device->i2cFunctionArg, buffer, length, false);
 
-    if (!device->i2cEndTransaction()) {
+    if (!device->i2cEndTransmission(device->i2cFunctionArg)) {
         return false;
     }
 

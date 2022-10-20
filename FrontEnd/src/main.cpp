@@ -21,6 +21,8 @@
 
 #include "nrf24.h"
 #include "bme280.h"
+#include "Hardware/I2cDevice.h"
+#include "Hardware/RealTimeClock.h"
 
 #include <hardware/gpio.h>
 #include <hardware/i2c.h>
@@ -72,7 +74,9 @@ namespace
     auto updateLedOn = true;
 
     std::unique_ptr<SPIClassRP2040> spiPeri;
-    std::unique_ptr<TwoWire> i2c;
+    std::unique_ptr<Hardware::I2cDevice> i2c;
+    std::unique_ptr<Hardware::RealTimeClock> rtc;
+
     nrf24_t nrf;
     struct bme280_dev bme;
     int bmeInitResult = 0;
@@ -90,6 +94,9 @@ public:
         , _nrf24Label{ this }
         , _nrf24FifoLabel{ this }
         , _touchPanelLabel{ this }
+        , _rtcDateTimeLabel{ this }
+        , _rtcPowerDownTimeStampLabel{ this }
+        , _rtcPowerUpTimeStampLabel{ this }
     {
         setRect(Rect{ 0, 0, 240, 160 });
 
@@ -115,6 +122,13 @@ public:
 
         _touchPanelLabel.setRect(getNextLineRect());
         setupLabel(_touchPanelLabel);
+
+        _rtcDateTimeLabel.setRect(getNextLineRect());
+        _rtcPowerDownTimeStampLabel.setRect(getNextLineRect());
+        _rtcPowerUpTimeStampLabel.setRect(getNextLineRect());
+        setupLabel(_rtcDateTimeLabel);
+        setupLabel(_rtcPowerDownTimeStampLabel);
+        setupLabel(_rtcPowerUpTimeStampLabel);
     }
 
     void updateBme280Data(const struct bme280_data& data)
@@ -172,12 +186,101 @@ public:
         );
     }
 
+    void updateRtcData()
+    {
+        uint8_t y, mo, d, wd, h, m, s;
+        bool m12h, pm;
+
+        if (
+            !RTC_MCP7940N_GetDateTime(
+                rtc->device(),
+                &y, &mo, &d, &wd, &h, &m, &s, &m12h, &pm
+            )
+        ) {
+            _rtcDateTimeLabel.setText("RTC: GetDateTime failed");
+            return;
+        }
+
+        Serial.println("updateRtcData: GetDateTime succeeded");
+
+        static const char* Weekdays[] = {
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday",
+            "Saturday",
+            "Sunday"
+        };
+
+        _rtcDateTimeLabel.setText(
+            // In this environment, automatic IDs doesn't work in fmtlib
+            fmt::format(
+                "RTC: 20{0:02}-{1:02}-{2:02} {3:02}:{4:02}:{5:02} {6}",
+                y, mo, d, h, m, s, Weekdays[wd]
+            )
+        );
+
+        if (
+            !RTC_MCP7940N_GetPowerFailTimeStamp(
+                rtc->device(),
+                RTC_MCP7940N_POWER_DOWN_TIMESTAMP,
+                &m, &h, &d, &wd, &mo, &m12h, &pm
+            )
+        ) {
+            _rtcPowerDownTimeStampLabel.setText("RTC: Pwr-Dn GetPowerFailTimeStamp failed");
+            return;
+        }
+
+        _rtcPowerDownTimeStampLabel.setText(
+            // In this environment, automatic IDs doesn't work in fmtlib
+            fmt::format(
+                "RTC: Pwr-Dn {0:02}-{1:02} {2:02}:{3:02} {4}",
+                mo, d, h, m, Weekdays[wd]
+            )
+        );
+
+        if (
+            !RTC_MCP7940N_GetPowerFailTimeStamp(
+                rtc->device(),
+                RTC_MCP7940N_POWER_UP_TIMESTAMP,
+                &m, &h, &d, &wd, &mo, &m12h, &pm
+            )
+        ) {
+            _rtcPowerUpTimeStampLabel.setText("RTC: Pwr-Up GetPowerFailTimeStamp failed");
+            return;
+        }
+
+        // auto powerFailed = false;
+        // if (
+        //     !RTC_MCP7940N_Get(
+        //         rtc->device(),
+        //         RTC_MCP7940N_POWER_UP_TIMESTAMP,
+        //         &m, &h, &d, &wd, &mo, &m12h, &pm
+        //     )
+        // ) {
+        //     _rtcPowerUpTimeStampLabel.setText("RTC: Pwr-Up GetPowerFailTimeStamp failed");
+        //     return;
+        // }
+
+        _rtcPowerUpTimeStampLabel.setText(
+            // In this environment, automatic IDs doesn't work in fmtlib
+            fmt::format(
+                "RTC: Pwr-Up {0:02}-{1:02} {2:02}:{3:02} {4}",
+                mo, d, h, m, Weekdays[wd]
+            )
+        );
+    }
+
 private:
     Label _titleLabel;
     Label _bme280Label;
     Label _nrf24Label;
     Label _nrf24FifoLabel;
     Label _touchPanelLabel;
+    Label _rtcDateTimeLabel;
+    Label _rtcPowerDownTimeStampLabel;
+    Label _rtcPowerUpTimeStampLabel;
 
     void setupLabel(Label& label)
     {
@@ -476,7 +579,7 @@ void setup()
 {
     Serial.begin();
 
-    // delay(5000);
+    delay(3000);
 
     Serial.println(PSTR("Initializing..."));
 
@@ -512,15 +615,17 @@ void setup()
         }
     );
 
-    i2c.reset(
-        new TwoWire{
-            i2c0,
-            20,
-            21
-        }
-    );
+    // i2c.reset(
+    //     new TwoWire{
+    //         i2c0,
+    //         20,
+    //         21
+    //     }
+    // );
 
-    i2c->begin();
+    // i2c->begin();
+    i2c = std::make_unique<Hardware::I2cDevice>(20, 21);
+    rtc = std::make_unique<Hardware::RealTimeClock>(*i2c);
 
     spiPeri->begin();
 
@@ -583,11 +688,16 @@ void setup()
         const uint32_t len,
         [[maybe_unused]] void* const intf_ptr
     ) -> BME280_INTF_RET_TYPE {
-        i2c->beginTransmission(BME280_I2C_ADDR_PRIM);
-        i2c->write(reg_addr);
+        // i2c->beginTransmission(BME280_I2C_ADDR_PRIM);
+        // i2c->write(reg_addr);
+        // i2c->endTransmission();
+        // const auto readLength = i2c->requestFrom(BME280_I2C_ADDR_PRIM, len);
+        // i2c->readBytes(reg_data, readLength);
+        i2c->startTransmission(BME280_I2C_ADDR_PRIM);
+        i2c->write(&reg_addr, 1);
+        i2c->startTransmission(BME280_I2C_ADDR_PRIM);
+        i2c->read(reg_data, len);
         i2c->endTransmission();
-        const auto readLength = i2c->requestFrom(BME280_I2C_ADDR_PRIM, len);
-        i2c->readBytes(reg_data, readLength);
         return BME280_INTF_RET_SUCCESS;
     };
     bme.write = [](
@@ -596,8 +706,12 @@ void setup()
         const uint32_t len,
         [[maybe_unused]] void* const intf_ptr
     ) -> BME280_INTF_RET_TYPE {
-        i2c->beginTransmission(BME280_I2C_ADDR_PRIM);
-        i2c->write(reg_addr);
+        // i2c->beginTransmission(BME280_I2C_ADDR_PRIM);
+        // i2c->write(reg_addr);
+        // i2c->write(reg_data, len);
+        // i2c->endTransmission();
+        i2c->startTransmission(BME280_I2C_ADDR_PRIM);
+        i2c->write(&reg_addr, 1);
         i2c->write(reg_data, len);
         i2c->endTransmission();
         return BME280_INTF_RET_SUCCESS;
@@ -618,6 +732,35 @@ void setup()
 
     diagScreen = std::make_unique<DiagScreen>();
 
+#if SET_RTC_DATETIME || 1
+    if (!
+        RTC_MCP7940N_SetDateTime(
+            rtc->device(),
+            22, 10, 20, 3, 22, 46, 00, false, false
+        )
+    ) {
+        Serial.println(PSTR("RTC SetDateTime failed"));
+    }
+#endif
+
+    if (
+        !RTC_MCP7940N_SetExternalOscillatorEnabled(
+            rtc->device(),
+            false
+        )
+    ) {
+        Serial.println(PSTR("RTC SetExternalOscillatorDisabled failed"));
+    }
+
+    if (
+        !RTC_MCP7940N_SetBatteryBackupEnabled(
+            rtc->device(),
+            true
+        )
+    ) {
+        Serial.println(PSTR("RTC SetBatteryBackupEnabled failed"));
+    }
+
     Serial.println(PSTR("Initialization finished"));
 }
 
@@ -634,6 +777,7 @@ void loop()
         stream_sensor_data_forced_mode(&bme);
         diagScreen->updateNrf24Data();
         diagScreen->updateTouchPanelControllerData(readTouchPanelController());
+        diagScreen->updateRtcData();
 
         Painter painter;
         painter.paintWidget(diagScreen.get());
