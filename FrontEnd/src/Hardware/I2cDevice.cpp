@@ -51,6 +51,9 @@ namespace Hardware
             return false;
         }
 
+        const auto result = _i2c.endTransmission(true);
+        Serial.printf("I2cDevice::endTransmission: result=%u\r\n", result);
+
         _currentAddress = 0;
 
         return true;

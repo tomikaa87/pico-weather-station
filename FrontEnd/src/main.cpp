@@ -27,6 +27,8 @@
 #include <hardware/gpio.h>
 #include <hardware/i2c.h>
 
+#include "Drivers/EERAM_47xxx.h"
+
 #ifdef RASPBERRY_PI
 #include <thread>
 #include <chrono>
@@ -42,6 +44,8 @@ using namespace std::chrono_literals;
 
 #define ENABLE_DRAW_TEST 0
 #define ENABLE_DIAG_SCREEN 1
+
+#define TEST_EERAM_PROGRAM_DATA 1
 
 class DiagScreen;
 
@@ -76,6 +80,7 @@ namespace
     std::unique_ptr<SPIClassRP2040> spiPeri;
     std::unique_ptr<Hardware::I2cDevice> i2c;
     std::unique_ptr<Hardware::RealTimeClock> rtc;
+    EERAM_47xxx_Device eeram;
 
     nrf24_t nrf;
     struct bme280_dev bme;
@@ -97,6 +102,7 @@ public:
         , _rtcDateTimeLabel{ this }
         , _rtcPowerDownTimeStampLabel{ this }
         , _rtcPowerUpTimeStampLabel{ this }
+        , _eeramStatusLabel{ this }
     {
         setRect(Rect{ 0, 0, 240, 160 });
 
@@ -129,6 +135,9 @@ public:
         setupLabel(_rtcDateTimeLabel);
         setupLabel(_rtcPowerDownTimeStampLabel);
         setupLabel(_rtcPowerUpTimeStampLabel);
+
+        _eeramStatusLabel.setRect(getNextLineRect());
+        setupLabel(_eeramStatusLabel);
     }
 
     void updateBme280Data(const struct bme280_data& data)
@@ -272,6 +281,30 @@ public:
         );
     }
 
+    void updateEeramData()
+    {
+        auto ase = false;
+        const auto aseRead = EERAM_47xxx_GetASE(
+            &eeram,
+            &ase
+        );
+
+        char data[5] = { 0 };
+        const auto dataRead = EERAM_47xxx_ReadBuffer(
+            &eeram,
+            0,
+            reinterpret_cast<uint8_t*>(data),
+            4
+        );
+
+        _eeramStatusLabel.setText(
+            fmt::format(
+                "EE: ASE=(r={},v={}), data=(r={},v={})",
+                aseRead, ase, dataRead, data
+            )
+        );
+    }
+
 private:
     Label _titleLabel;
     Label _bme280Label;
@@ -281,6 +314,7 @@ private:
     Label _rtcDateTimeLabel;
     Label _rtcPowerDownTimeStampLabel;
     Label _rtcPowerUpTimeStampLabel;
+    Label _eeramStatusLabel;
 
     void setupLabel(Label& label)
     {
@@ -627,6 +661,63 @@ void setup()
     i2c = std::make_unique<Hardware::I2cDevice>(20, 21);
     rtc = std::make_unique<Hardware::RealTimeClock>(*i2c);
 
+    eeram.a1 = 0;
+    eeram.a2 = 0;
+
+    eeram.i2cFunctionArg = i2c.get();
+
+    eeram.i2cStartTransmission = [](
+        void* const arg,
+        const uint8_t address
+    ) {
+        auto* const i2c = reinterpret_cast<Hardware::I2cDevice*>(arg);
+        return i2c->startTransmission(address);
+    };
+
+    eeram.i2cEndTransmission = [](void* const arg) {
+        auto* const i2c = reinterpret_cast<Hardware::I2cDevice*>(arg);
+        return i2c->endTransmission();
+    };
+
+    eeram.i2cRead = [](
+        void* const arg,
+        uint8_t* const data,
+        const size_t length,
+        const bool noStop
+    ) {
+        auto* const i2c = reinterpret_cast<Hardware::I2cDevice*>(arg);
+        return i2c->read(data, length, noStop);
+    };
+
+    eeram.i2cWrite = [](
+        void* const arg,
+        const uint8_t* const data,
+        const size_t length,
+        const bool noStop
+    ) {
+        auto* const i2c = reinterpret_cast<Hardware::I2cDevice*>(arg);
+        return i2c->write(data, length, noStop);
+    };
+
+#if TEST_EERAM_PROGRAM_DATA
+    Serial.println("Programming EERAM test data");
+    if (
+        !EERAM_47xxx_WriteBuffer(
+            &eeram,
+            0,
+            reinterpret_cast<const uint8_t*>("Test"),
+            4
+        )
+    ) {
+        Serial.println("Failed to program EERAM test data");
+    }
+
+    Serial.println("Setting EERAM ASE flag");
+    if (!EERAM_47xxx_SetASE(&eeram, true)) {
+        Serial.println("Failed to set EERAM ASE flag");
+    }
+#endif
+
     spiPeri->begin();
 
     spiPeri->beginTransaction(
@@ -732,7 +823,7 @@ void setup()
 
     diagScreen = std::make_unique<DiagScreen>();
 
-#if SET_RTC_DATETIME || 1
+#if SET_RTC_DATETIME
     if (!
         RTC_MCP7940N_SetDateTime(
             rtc->device(),
@@ -778,6 +869,7 @@ void loop()
         diagScreen->updateNrf24Data();
         diagScreen->updateTouchPanelControllerData(readTouchPanelController());
         diagScreen->updateRtcData();
+        diagScreen->updateEeramData();
 
         Painter painter;
         painter.paintWidget(diagScreen.get());
