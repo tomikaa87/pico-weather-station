@@ -28,32 +28,150 @@ static inline uint8_t calculateControlByte(
     return controlByteMask | (device->a1 << 2) | (device->a2 << 3);
 }
 
-static bool writeRegister(
+static bool readMemory(
     const EERAM_47xxx_Device* const device,
     const uint8_t address,
-    const uint8_t data
+    uint8_t* const data,
+    const size_t length,
+    const bool sram
+)
+{
+    uint8_t controlByte = calculateControlByte(
+        device,
+        sram
+            ? EERAM_47xxx_CTRL_SRAM_WRITE_MASK
+            : EERAM_47xxx_CTRL_REG_WRITE_MASK
+    );
+
+    if (
+        !device->i2cStartTransmission(
+            device->i2cFunctionArg,
+            controlByte
+        )
+    ) {
+        return false;
+    }
+
+    if (
+        !device->i2cWrite(
+            device->i2cFunctionArg,
+            &address,
+            1,
+            true
+        )
+    ) {
+        return false;
+    }
+
+    controlByte = calculateControlByte(
+        device,
+        sram
+            ? EERAM_47xxx_CTRL_SRAM_READ_MASK
+            : EERAM_47xxx_CTRL_REG_READ_MASK
+    );
+
+    // Repeated start condition
+    if (
+        !device->i2cStartTransmission(
+            device->i2cFunctionArg,
+            controlByte
+        )
+    ) {
+        return false;
+    }
+
+    bool ok = device->i2cRead(device->i2cFunctionArg, data, length, false);
+
+    if (!device->i2cEndTransmission(device->i2cFunctionArg)) {
+        return false;
+    }
+
+    return ok;
+}
+
+static bool writeMemory(
+    const EERAM_47xxx_Device* const device,
+    const uint8_t address,
+    const uint8_t* const data,
+    const size_t length,
+    const bool sram
 )
 {
     const uint8_t controlByte = calculateControlByte(
         device,
-        EERAM_47xxx_CTRL_REG_WRITE_MASK
+        sram
+            ? EERAM_47xxx_CTRL_SRAM_READ_MASK
+            : EERAM_47xxx_CTRL_REG_READ_MASK
     );
 
-    if (!device->i2cStartTransmission(controlByte)) {
+    if (
+        !device->i2cStartTransmission(
+            device->i2cFunctionArg,
+            controlByte
+        )
+    ) {
         return false;
     }
 
-    if (!device->i2cWrite(address)) {
+    if (!device->i2cWrite(device->i2cFunctionArg, &address, 1, true)) {
         return false;
     }
 
-    if (!device->i2cWrite(data)) {
+    if (!device->i2cWrite(device->i2cFunctionArg, data, length, false)) {
         return false;
     }
 
-    if (!device->i2cEndTransmission()) {
+    if (!device->i2cEndTransmission(device->i2cFunctionArg)) {
         return false;
     }
+
+    return true;
+}
+
+bool changeControlRegisterFlags(
+    const EERAM_47xxx_Device* const device,
+    const uint8_t flags,
+    const uint8_t mask
+)
+{
+    uint8_t value = 0;
+
+    if (!EERAM_47xxx_ReadControlRegister(device, &value)) {
+        return false;
+    }
+
+    // Clear the bits specified in `mask`
+    value &= ~mask;
+
+    // Set the bits specified in `flags` masked by `mask`
+    value |= flags & mask;
+
+    if (
+        !writeMemory(
+            device,
+            EERAM_47xxx_REG_STATUS,
+            &value,
+            sizeof(value),
+            false
+        )
+    ) {
+        return false;
+    }
+
+    return true;
+}
+
+bool readControlRegisterFlags(
+    const EERAM_47xxx_Device* const device,
+    uint8_t* const value,
+    const uint8_t mask
+)
+{
+    if (!EERAM_47xxx_ReadControlRegister(device, value)) {
+        return false;
+    }
+
+    *value &= mask;
 
     return true;
 }
@@ -79,37 +197,7 @@ bool EERAM_47xxx_WriteBuffer(
     const size_t length
 )
 {
-    const uint8_t controlByte = calculateControlByte(
-        device,
-        EERAM_47xxx_CTRL_SRAM_WRITE_MASK
-    );
-
-    if (!device->i2cStartTransmission(controlByte)) {
-        return false;
-    }
-
-    // Address high byte
-    if (!device->i2cWrite((address >> 8) & 0xFF)) {
-        return false;
-    }
-
-    // Address low byte
-    if (!device->i2cWrite(address & 0xFF)) {
-        return false;
-    }
-
-    // Data bytes
-    for (size_t i = 0; i < length; ++i) {
-        if (!device->i2cWrite(buffer[i])) {
-            return false;
-        }
-    }
-
-    if (!device->i2cEndTransmission()) {
-        return false;
-    }
-
-    return true;
+    return writeMemory(device, address, buffer, length, true);
 }
 
 bool EERAM_47xxx_ReadByte(
@@ -133,49 +221,7 @@ bool EERAM_47xxx_ReadBuffer(
     const size_t length
 )
 {
-    const uint8_t writeControlByte = calculateControlByte(
-        device,
-        EERAM_47xxx_CTRL_SRAM_WRITE_MASK
-    );
-
-    if (!device->i2cStartTransmission(writeControlByte)) {
-        return false;
-    }
-
-    // Address high byte
-    if (!device->i2cWrite((address >> 8) & 0xFF)) {
-        return false;
-    }
-
-    // Address low byte
-    if (!device->i2cWrite(address & 0xFF)) {
-        return false;
-    }
-
-    // Send Control Byte
-    const uint8_t readControlByte = calculateControlByte(
-        device,
-        EERAM_47xxx_CTRL_SRAM_READ_MASK
-    );
-
-    // Repeated start condition
-    if (!device->i2cStartTransmission(readControlByte)) {
-        return false;
-    }
-
-    for (size_t i = 0; i < length; ++i) {
-        const bool last = i == length - 1;
-
-        if (!device->i2cRead(&buffer[i], last)) {
-            return false;
-        }
-    }
-
-    if (!device->i2cEndTransmission()) {
-        return false;
-    }
-
-    return true;
+    return readMemory(device, address, buffer, length, true);
 }
 
 bool EERAM_47xxx_SetASE(
@@ -183,19 +229,11 @@ bool EERAM_47xxx_SetASE(
     const bool enabled
 )
 {
-    uint8_t status = 0;
-
-    if (!EERAM_47xxx_ReadControlRegister(device, &status)) {
-        return false;
-    }
-
-    status |= EERAM_47xxx_STATUS_BIT_ASE;
-
-    if (!writeRegister(device, EERAM_47xxx_REG_STATUS, status)) {
-        return false;
-    }
-
-    return true;
+    return changeControlRegisterFlags(
+        device,
+        enabled ? 0xFF : 0,
+        EERAM_47xxx_STATUS_BIT_ASE
+    );
 }
 
 bool EERAM_47xxx_GetASE(
@@ -203,13 +241,19 @@ bool EERAM_47xxx_GetASE(
     bool* const output
 )
 {
-    uint8_t status = 0;
+    uint8_t value = 0;
 
-    if (!EERAM_47xxx_ReadControlRegister(device, &status)) {
+    if (
+        !readControlRegisterFlags(
+            device,
+            &value,
+            EERAM_47xxx_STATUS_BIT_ASE
+        )
+    ) {
         return false;
     }
 
-    *output = status & EERAM_47xxx_STATUS_BIT_ASE > 0;
+    *output = value > 0;
 
     return true;
 }
@@ -219,20 +263,13 @@ bool EERAM_47xxx_SetBP(
     const EERAM_47xxx_BP bp
 )
 {
-    uint8_t status = 0;
-
-    if (!EERAM_47xxx_ReadControlRegister(device, &status)) {
-        return false;
-    }
-
-    status &= (uint8_t)~(EERAM_47xxx_BP_BIT_MASK << 2);
-    status |= ((uint8_t)bp & EERAM_47xxx_BP_BIT_MASK) << 2;
-
-    if (!writeRegister(device, EERAM_47xxx_REG_STATUS, status)) {
-        return false;
-    }
-
-    return true;
+    return changeControlRegisterFlags(
+        device,
+        (bp & 0b111) << 2,
+        EERAM_47xxx_STATUS_BIT_BP0
+            | EERAM_47xxx_STATUS_BIT_BP1
+            | EERAM_47xxx_STATUS_BIT_BP2
+    );
 }
 
 bool EERAM_47xxx_GetBP(
@@ -240,13 +277,21 @@ bool EERAM_47xxx_GetBP(
     EERAM_47xxx_BP* const output
 )
 {
-    uint8_t status = 0;
+    uint8_t value = 0;
 
-    if (!EERAM_47xxx_ReadControlRegister(device, &status)) {
+    if (
+        !readControlRegisterFlags(
+            device,
+            &value,
+            EERAM_47xxx_STATUS_BIT_BP0
+                | EERAM_47xxx_STATUS_BIT_BP1
+                | EERAM_47xxx_STATUS_BIT_BP2
+        )
+    ) {
         return false;
     }
 
-    *output = (EERAM_47xxx_BP)((status & EERAM_47xxx_BP_BIT_MASK) >> 2);
+    *output = (EERAM_47xxx_BP)(value >> 2);
 
     return true;
 }
@@ -256,13 +301,19 @@ bool EERAM_47xxx_GetAM(
     bool* const output
 )
 {
-    uint8_t status = 0;
+    uint8_t value = 0;
 
-    if (!EERAM_47xxx_ReadControlRegister(device, &status)) {
+    if (
+        !readControlRegisterFlags(
+            device,
+            &value,
+            EERAM_47xxx_STATUS_BIT_AM
+        )
+    ) {
         return false;
     }
 
-    *output = status & EERAM_47xxx_STATUS_BIT_AM > 0;
+    *output = value > 0;
 
     return true;
 }
@@ -271,19 +322,11 @@ bool EERAM_47xxx_ClearEVENT(
     const EERAM_47xxx_Device* const device
 )
 {
-    uint8_t status = 0;
-
-    if (!EERAM_47xxx_ReadControlRegister(device, &status)) {
-        return false;
-    }
-
-    status &= (uint8_t)~EERAM_47xxx_STATUS_BIT_EVENT;
-
-    if (!writeRegister(device, EERAM_47xxx_REG_STATUS, status)) {
-        return false;
-    }
-
-    return true;
+    return changeControlRegisterFlags(
+        device,
+        0,
+        EERAM_47xxx_STATUS_BIT_EVENT
+    );
 }
 
 bool EERAM_47xxx_GetEVENT(
@@ -291,13 +334,19 @@ bool EERAM_47xxx_GetEVENT(
     bool* output
 )
 {
-    uint8_t status = 0;
+    uint8_t value = 0;
 
-    if (!EERAM_47xxx_ReadControlRegister(device, &status)) {
+    if (
+        !readControlRegisterFlags(
+            device,
+            &value,
+            EERAM_47xxx_STATUS_BIT_EVENT
+        )
+    ) {
         return false;
     }
 
-    *output = status & EERAM_47xxx_STATUS_BIT_EVENT > 0;
+    *output = value > 0;
 
     return true;
 }
@@ -312,15 +361,15 @@ bool EERAM_47xxx_ReadControlRegister(
         EERAM_47xxx_CTRL_REG_READ_MASK
     );
 
-    if (!device->i2cStartTransmission(controlByte)) {
+    if (!device->i2cStartTransmission(device->i2cFunctionArg, controlByte)) {
         return false;
     }
 
-    if (!device->i2cRead(output, false)) {
+    if (!device->i2cRead(device->i2cFunctionArg, output, 1, false)) {
         return false;
     }
 
-    if (!device->i2cEndTransmission()) {
+    if (!device->i2cEndTransmission(device->i2cFunctionArg)) {
         return false;
     }
 
@@ -332,9 +381,11 @@ bool EERAM_47xxx_WriteCommand(
     const EERAM_47xxx_Command command
 )
 {
-    return writeRegister(
+    return writeMemory(
         device,
         EERAM_47xxx_REG_COMMAND,
-        (uint8_t)command
+        (const uint8_t*)&command,
+        1,
+        false
     );
 }
