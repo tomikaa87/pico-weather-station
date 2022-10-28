@@ -28,7 +28,7 @@ static inline uint8_t calculateControlByte(
 
 static bool readMemory(
     const EERAM_47xxx_Device* const device,
-    const uint8_t address,
+    const uint16_t address,
     uint8_t* const data,
     const size_t length,
     const bool sram
@@ -50,11 +50,16 @@ static bool readMemory(
         return false;
     }
 
+    uint8_t addressBytes[2] = {
+        (uint8_t)(address >> 8 & 0b1),
+        (uint8_t)(address & 0xFF)
+    };
+
     if (
         !device->i2cWrite(
             device->i2cFunctionArg,
-            &address,
-            1,
+            addressBytes,
+            sizeof(addressBytes),
             true
         )
     ) {
@@ -104,7 +109,17 @@ static bool writeMemory(
         return false;
     }
 
-    bool ok = device->i2cWrite(device->i2cFunctionArg, &address, 1, true);
+    uint8_t addressBytes[2] = {
+        (uint8_t)(address >> 8 & 0b1),
+        (uint8_t)(address & 0xFF)
+    };
+
+    bool ok = device->i2cWrite(
+        device->i2cFunctionArg,
+        addressBytes,
+        sizeof(addressBytes),
+        true
+    );
 
     ok &= device->i2cWrite(device->i2cFunctionArg, data, length, false);
 
