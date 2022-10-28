@@ -23,8 +23,15 @@ add_compile_options(-Wall
 add_executable(rtc_eeram_test
     main.cpp
     I2cDevice.cpp
-    EERAM_47xxx.c
-    RTC_MCP7940N.c
+    ../../FrontEnd/src/Drivers/EERAM_47xxx.c
+    ../../FrontEnd/src/Drivers/EERAM_47xxx.h
+    ../../FrontEnd/src/Drivers/RTC_MCP7940N.c
+    ../../FrontEnd/src/Drivers/RTC_MCP7940N.h
+)
+
+target_include_directories(rtc_eeram_test
+    PRIVATE
+        ../../FrontEnd/src/Drivers
 )
 
 # pull in common dependencies

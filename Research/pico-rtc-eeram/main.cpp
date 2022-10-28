@@ -6,8 +6,8 @@
 #include <cstdio>
 
 #include "I2cDevice.h"
-#include "EERAM_47xxx.h"
-#include "RTC_MCP7940N.h"
+#include <EERAM_47xxx.h>
+#include <RTC_MCP7940N.h>
 
 #define RTC_SET_DATETIME 0
 #define RTC_WRITE_TEST_DATA 0
