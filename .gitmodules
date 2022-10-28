@@ -10,3 +10,12 @@
 [submodule "FrontEnd/dependencies/flatbuffers"]
 	path = FrontEnd/dependencies/flatbuffers
 	url = https://github.com/google/flatbuffers.git
+[submodule "Software/3rdparty/u8g2"]
+	path = Firmware/3rdparty/u8g2
+	url = https://github.com/olikraus/u8g2.git
+[submodule "Software/3rdparty/fmt"]
+	path = Firmware/3rdparty/fmt
+	url = https://github.com/fmtlib/fmt.git
+[submodule "Software/3rdparty/json"]
+	path = Firmware/3rdparty/json
+	url = https://github.com/nlohmann/json.git
