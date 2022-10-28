@@ -20,7 +20,7 @@ add_compile_options(-Wall
     -Wno-maybe-uninitialized
 )
 
-add_executable(rtcmcp7940n
+add_executable(rtc_eeram_test
     main.cpp
     I2cDevice.cpp
     EERAM_47xxx.c
@@ -28,11 +28,11 @@ add_executable(rtcmcp7940n
 )
 
 # pull in common dependencies
-target_link_libraries(rtcmcp7940n
+target_link_libraries(rtc_eeram_test
     pico_stdlib
     hardware_gpio
     hardware_i2c
 )
 
 # create map/bin/hex file etc.
-pico_add_extra_outputs(rtcmcp7940n)
+pico_add_extra_outputs(rtc_eeram_test)

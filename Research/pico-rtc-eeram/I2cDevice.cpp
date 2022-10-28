@@ -41,6 +41,11 @@ namespace Hardware
             i2c0->restart_on_next = true;
         }
 
+        printf(
+            "I2cDevice::startTransmission: i2c0->restart_on_next=%u\r\n",
+            i2c0->restart_on_next
+        );
+
         _currentAddress = address;
 
         return true;
@@ -79,8 +84,8 @@ namespace Hardware
 #endif
 
         for (auto i = 0u; i < length; ++i) {
-            bool first = i == 0;
-            bool last = i == length - 1;
+            const bool first = i == 0;
+            const bool last = i == length - 1;
 
 #if DEBUG_I2C_FUNCTIONS
             printf(" %02x", data[i]);
@@ -133,8 +138,8 @@ namespace Hardware
 #endif
 
         for (auto i = 0u; i < length; ++i) {
-            bool first = i == 0;
-            bool last = i == length - 1;
+            const bool first = i == 0;
+            const bool last = i == length - 1;
 
             while (!i2c_get_write_available(i2c0))
                 tight_loop_contents();

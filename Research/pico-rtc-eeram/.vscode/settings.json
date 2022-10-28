@@ -1,5 +1,6 @@
 {
     "files.associations": {
-        "rtc_mcp7940n.h": "c"
+        "rtc_mcp7940n.h": "c",
+        "eeram_47xxx.h": "c"
     }
 }

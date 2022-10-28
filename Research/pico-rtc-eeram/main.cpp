@@ -9,6 +9,10 @@
 #include "EERAM_47xxx.h"
 #include "RTC_MCP7940N.h"
 
+#define RTC_SET_DATETIME 0
+#define RTC_WRITE_TEST_DATA 0
+#define EERAM_WRITE_TEST_DATA 0
+
 namespace Pins::Uart
 {
     constexpr auto TX = 12;
@@ -106,8 +110,14 @@ int main()
     Hardware::I2cDevice i2c{ Pins::I2C::SDA, Pins::I2C::SCL };
 
     const auto rtc = setupRtc(i2c);
-    // const auto eeram = setupEeram(i2c);
+    const auto eeram = setupEeram(i2c);
 
+    printf("Enabling RTC battery backup\r\n");
+    if (!RTC_MCP7940N_SetBatteryBackupEnabled(&rtc, true)) {
+        printf("Failed to enable RTC battery backup\r\n");
+    }
+
+#if RTC_SET_DATETIME
     printf("Testing date-time writing...\r\n");
 
     if (RTC_MCP7940N_SetDateTime(&rtc, 22, 10, 17, 0, 20, 14, 20, false, false)) {
@@ -115,6 +125,7 @@ int main()
     } else {
         printf("Failed to set date-time\r\n");
     }
+#endif
 
     printf("Testing date-time reading...\r\n");
 
@@ -135,9 +146,10 @@ int main()
         ok, year, month, date, wd, hour, minute, second, mode12h, pm
     );
 
-    printf("Testing SRAM reading/writing...\r\n");
-
     const char testData[] = "RTC_MCP7940N_WriteSRAM";
+
+#if RTC_WRITE_TEST_DATA
+    printf("Testing SRAM reading/writing...\r\n");
 
     if (
         RTC_MCP7940N_WriteSRAM(
@@ -148,23 +160,24 @@ int main()
         )
     ) {
         printf("SRAM write succeeded, reading...\r\n");
-
-        char buffer[64] = { 0 };
-
-        if (
-            RTC_MCP7940N_ReadSRAM(
-                &rtc,
-                0,
-                reinterpret_cast<uint8_t*>(buffer),
-                sizeof(testData)
-            )
-        ) {
-            printf("SRAM read succeeded, data: %s\r\n", buffer);
-        } else {
-            printf("SRAM read failed\r\n");
-        }
     } else {
         printf("SRAM write failed\r\n");
+    }
+#endif
+
+    char buffer[64] = { 0 };
+
+    if (
+        RTC_MCP7940N_ReadSRAM(
+            &rtc,
+            0,
+            reinterpret_cast<uint8_t*>(buffer),
+            sizeof(testData)
+        )
+    ) {
+        printf("SRAM read succeeded, data: %s\r\n", buffer);
+    } else {
+        printf("SRAM read failed\r\n");
     }
 
     printf("Setting up Alarm 0...\r\n");
@@ -214,6 +227,33 @@ int main()
         "Saturday",
         "Sunday"
     };
+
+    const char eeramTestData[] = "[proc] Executing command: /home/tomikaa/Downloads/cmake-3.24.2-linux-x86_64/bin/cmake --build /home/tomikaa/github/pico-weather-station/Research/pico-rtc-eeram/build --config Debug --target rtc_eeram_test --";
+
+    printf("Setting EERAM ASE enabled\r\n");
+    if (!EERAM_47xxx_SetASE(&eeram, true)) {
+        printf("Failed to enable EERAM ASE\r\n");
+    }
+
+#if EERAM_WRITE_TEST_DATA
+    printf("Writing EERAM test data\r\n");
+    if (!EERAM_47xxx_WriteBuffer(&eeram, 10, reinterpret_cast<const uint8_t*>(eeramTestData), sizeof(eeramTestData))) {
+        printf("Failed to write EERAM test data\r\n");
+    }
+#endif
+
+    char eeramBuf[sizeof(eeramTestData) + 1] = { 0 };
+
+    printf("Reading EERAM test data\r\n");
+    if (!EERAM_47xxx_ReadBuffer(&eeram, 10, reinterpret_cast<uint8_t*>(eeramBuf), sizeof(eeramTestData))) {
+        printf("Failed to read EERAM test data\r\n");
+    } else {
+        printf("EERAM test data: %s\r\n", eeramBuf);
+    }
+
+    while (true) {
+        tight_loop_contents();
+    }
 
     while (true) {
         sleep_ms(1000);
