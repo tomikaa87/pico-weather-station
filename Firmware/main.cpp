@@ -16,11 +16,8 @@
 
 #include <fmt/core.h>
 
-#include <SPI.h>
-#include <Wire.h>
-
-#include "nrf24.h"
-#include "bme280.h"
+#include "Drivers/nrf24.h"
+#include "Drivers/bme280.h"
 #include "Hardware/I2cDevice.h"
 #include "Hardware/RealTimeClock.h"
 
@@ -28,17 +25,6 @@
 #include <hardware/i2c.h>
 
 #include "Drivers/EERAM_47xxx.h"
-
-#ifdef RASPBERRY_PI
-#include <thread>
-#include <chrono>
-#include <csignal>
-#include <iostream>
-#include <unistd.h>
-#include <termios.h>
-
-using namespace std::chrono_literals;
-#endif
 
 // #include <fmt/core.h>
 
@@ -77,7 +63,7 @@ namespace
     int32_t lastUpdateMillis = 0;
     auto updateLedOn = true;
 
-    std::unique_ptr<SPIClassRP2040> spiPeri;
+    // std::unique_ptr<SPIClassRP2040> spiPeri;
     std::unique_ptr<Hardware::I2cDevice> i2c;
     std::unique_ptr<Hardware::RealTimeClock> rtc;
     EERAM_47xxx_Device eeram;
@@ -210,7 +196,7 @@ public:
             return;
         }
 
-        Serial.println("updateRtcData: GetDateTime succeeded");
+        printf("updateRtcData: GetDateTime succeeded");
 
         static const char* Weekdays[] = {
             "Monday",
@@ -615,7 +601,7 @@ void setup()
 
     delay(3000);
 
-    Serial.println(PSTR("Initializing..."));
+    printf(PSTR("Initializing..."));
 
     display = std::make_unique<Display>();
     display->clear();
@@ -700,7 +686,7 @@ void setup()
     };
 
 #if TEST_EERAM_PROGRAM_DATA
-    Serial.println("Programming EERAM test data");
+    printf("Programming EERAM test data");
     if (
         !EERAM_47xxx_WriteBuffer(
             &eeram,
@@ -709,12 +695,12 @@ void setup()
             4
         )
     ) {
-        Serial.println("Failed to program EERAM test data");
+        printf("Failed to program EERAM test data");
     }
 
-    Serial.println("Setting EERAM ASE flag");
+    printf("Setting EERAM ASE flag");
     if (!EERAM_47xxx_SetASE(&eeram, true)) {
-        Serial.println("Failed to set EERAM ASE flag");
+        printf("Failed to set EERAM ASE flag");
     }
 #endif
 
@@ -830,7 +816,7 @@ void setup()
             22, 10, 20, 3, 22, 46, 00, false, false
         )
     ) {
-        Serial.println(PSTR("RTC SetDateTime failed"));
+        printf(PSTR("RTC SetDateTime failed"));
     }
 #endif
 
@@ -840,7 +826,7 @@ void setup()
             false
         )
     ) {
-        Serial.println(PSTR("RTC SetExternalOscillatorDisabled failed"));
+        printf(PSTR("RTC SetExternalOscillatorDisabled failed"));
     }
 
     if (
@@ -849,10 +835,10 @@ void setup()
             true
         )
     ) {
-        Serial.println(PSTR("RTC SetBatteryBackupEnabled failed"));
+        printf(PSTR("RTC SetBatteryBackupEnabled failed"));
     }
 
-    Serial.println(PSTR("Initialization finished"));
+    printf(PSTR("Initialization finished"));
 }
 
 void loop()
@@ -863,7 +849,7 @@ void loop()
     if (millis() - updateMillis >= 1000) {
         updateMillis = millis();
 
-        Serial.println(PSTR("Painting diagnostics screen"));
+        printf(PSTR("Painting diagnostics screen"));
 
         stream_sensor_data_forced_mode(&bme);
         diagScreen->updateNrf24Data();
@@ -878,7 +864,7 @@ void loop()
 
 #if ENABLE_DRAW_TEST
     Serial.printf("BME280 init result: %d\r\n", bmeInitResult);
-    Serial.println("Running display test");
+    printf("Running display test");
 
     display->clear();
 
@@ -903,7 +889,7 @@ void loop()
         digitalWrite(LED_BUILTIN, updateLedOn ? HIGH : LOW);
         updateLedOn = !updateLedOn;
 
-        Serial.println(fmt::format("{}: update", __func__).c_str());
+        printf(fmt::format("{}: update", __func__).c_str());
 
         weatherStation->setCurrentTemperature(temperature);
         weatherStation->setCurrentSensorTemperature(temperature);
