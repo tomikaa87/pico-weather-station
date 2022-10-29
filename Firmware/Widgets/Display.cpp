@@ -6,7 +6,7 @@
 #include <hardware/pwm.h>
 #include <hardware/spi.h>
 
-#include <U8g2lib.h>
+#include <u8g2.h>
 #include <u8x8.h>
 
 #include <memory>

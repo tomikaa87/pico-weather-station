@@ -8,8 +8,6 @@ public:
     enum class Family
     {
         PfTempesta7,
-        P01Type,
-        VcrOsd,
         RpgSystem,
         Pxl16x8,
         Pxl16x8_x2,

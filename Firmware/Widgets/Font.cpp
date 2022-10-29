@@ -2,7 +2,7 @@
 
 #include "../Fonts.h"
 
-#include <U8g2lib.h>
+#include <u8g2.h>
 
 Font::Font(
     Family family,
@@ -49,12 +49,6 @@ const uint8_t* Font::data() const
                         : Fonts::PfTempesta7Condensed;
             }
         }
-
-        case Family::P01Type:
-            return u8g2_font_p01type_tn;
-
-        case Family::VcrOsd:
-            return u8g2_font_VCR_OSD_tr;
 
         case Family::RpgSystem:
             return Fonts::RpgSystem;

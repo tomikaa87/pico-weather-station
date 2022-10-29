@@ -2,6 +2,7 @@
     "files.associations": {
         "rtc_mcp7940n.h": "c",
         "eeram_47xxx.h": "c",
-        "memory": "cpp"
+        "memory": "cpp",
+        "u8g2.h": "c"
     }
 }

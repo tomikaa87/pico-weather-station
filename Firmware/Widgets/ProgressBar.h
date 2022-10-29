@@ -2,8 +2,8 @@
 
 #include "Rect.h"
 
-#include <U8g2lib.h>
-#include <U8x8lib.h>
+#include <u8g2.h>
+#include <u8x8.h>
 
 #include <string>
 

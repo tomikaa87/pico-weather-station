@@ -21,9 +21,37 @@ add_compile_options(
     -Wno-maybe-uninitialized
 )
 
-add_subdirectory(
-    3rdparty/u8g2
+add_library(u8g2
+    3rdparty/u8g2/csrc/u8g2_bitmap.c
+    3rdparty/u8g2/csrc/u8g2_box.c
+    3rdparty/u8g2/csrc/u8g2_buffer.c
+    3rdparty/u8g2/csrc/u8g2_circle.c
+    3rdparty/u8g2/csrc/u8g2_cleardisplay.c
+    3rdparty/u8g2/csrc/u8g2_d_memory.c
+    3rdparty/u8g2/csrc/u8g2_font.c
+    3rdparty/u8g2/csrc/u8g2_hvline.c
+    3rdparty/u8g2/csrc/u8g2_intersection.c
+    3rdparty/u8g2/csrc/u8g2_kerning.c
+    3rdparty/u8g2/csrc/u8g2_ll_hvline.c
+    3rdparty/u8g2/csrc/u8g2_setup.c
+    3rdparty/u8g2/csrc/u8x8_8x8.c
+    3rdparty/u8g2/csrc/u8x8_byte.c
+    3rdparty/u8g2/csrc/u8x8_cad.c
+    3rdparty/u8g2/csrc/u8x8_capture.c
+    3rdparty/u8g2/csrc/u8x8_display.c
+    3rdparty/u8g2/csrc/u8x8_gpio.c
+    3rdparty/u8g2/csrc/u8x8_d_st7586s_erc240160.c
+    3rdparty/u8g2/csrc/u8x8_setup.c
+    3rdparty/u8g2/csrc/u8x8_u16toa.c
 )
+
+target_include_directories(u8g2
+    PUBLIC
+        3rdparty/u8g2/cppsrc
+        3rdparty/u8g2/csrc
+)
+
+add_subdirectory(3rdparty/fmt)
 
 add_executable(PicoWeatherStationFirmware
     Fonts.cpp
@@ -36,6 +64,8 @@ add_executable(PicoWeatherStationFirmware
 
     Hardware/I2cDevice.cpp
     Hardware/I2cDevice.h
+    Hardware/RealTimeClock.cpp
+    Hardware/RealTimeClock.h
 
     Drivers/EERAM_47xxx.c
     Drivers/EERAM_47xxx.h
@@ -76,9 +106,7 @@ add_executable(PicoWeatherStationFirmware
 
 target_include_directories(PicoWeatherStationFirmware
     PRIVATE
-        3rdparty/fmt/include
         3rdparty/json/single_include
-        3rdparty/u8g2/cppsrc
         3rdparty/u8g2/csrc
 )
 
@@ -88,6 +116,7 @@ target_link_libraries(PicoWeatherStationFirmware
     hardware_i2c
     hardware_pwm
     hardware_spi
+    fmt
     u8g2
 )
 

@@ -1,6 +1,6 @@
 #include "Fonts.h"
 
-#include <U8g2lib.h>
+#include <u8g2.h>
 
 namespace Fonts
 {
