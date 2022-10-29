@@ -23,10 +23,10 @@
 
 #include <hardware/gpio.h>
 #include <hardware/i2c.h>
+#include <hardware/spi.h>
+#include <pico/stdio.h>
 
 #include "Drivers/EERAM_47xxx.h"
-
-// #include <fmt/core.h>
 
 #define ENABLE_DRAW_TEST 0
 #define ENABLE_DIAG_SCREEN 1
@@ -472,7 +472,7 @@ void print_sensor_data(struct bme280_data *comp_data)
     hum = 1.0f / 1024.0f * comp_data->humidity;
 #endif
 #endif
-    Serial.printf("%0.2lf deg C, %0.2lf hPa, %0.2lf%%\r\n", temp, press, hum);
+    printf("%0.2lf deg C, %0.2lf hPa, %0.2lf%%\r\n", temp, press, hum);
 }
 
 /*!
@@ -504,12 +504,12 @@ int8_t stream_sensor_data_forced_mode(struct bme280_dev *dev)
     rslt = bme280_set_sensor_settings(settings_sel, dev);
     if (rslt != BME280_OK)
     {
-        Serial.printf("Failed to set sensor settings (code %+d).\r\n", rslt);
+        printf("Failed to set sensor settings (code %+d).\r\n", rslt);
 
         return rslt;
     }
 
-    // Serial.printf("Temperature, Pressure, Humidity\r\n");
+    // printf("Temperature, Pressure, Humidity\r\n");
 
     /*Calculate the minimum delay required between consecutive measurement based upon the sensor enabled
      *  and the oversampling configuration. */
@@ -522,7 +522,7 @@ int8_t stream_sensor_data_forced_mode(struct bme280_dev *dev)
         rslt = bme280_set_sensor_mode(BME280_FORCED_MODE, dev);
         if (rslt != BME280_OK)
         {
-            Serial.printf("Failed to set sensor mode (code %+d).\r\n", rslt);
+            printf("Failed to set sensor mode (code %+d).\r\n", rslt);
             break;
         }
 
@@ -531,7 +531,7 @@ int8_t stream_sensor_data_forced_mode(struct bme280_dev *dev)
         rslt = bme280_get_sensor_data(BME280_ALL, &comp_data, dev);
         if (rslt != BME280_OK)
         {
-            Serial.printf("Failed to get sensor data (code %+d).\r\n", rslt);
+            printf("Failed to get sensor data (code %+d).\r\n", rslt);
             break;
         }
 
@@ -548,12 +548,12 @@ int8_t stream_sensor_data_forced_mode(struct bme280_dev *dev)
 TouchPanelControllerData readTouchPanelController()
 {
     auto readAdc = [](const uint8_t ctrl) -> int16_t {
-        digitalWrite(Pins::Touch::CS, LOW);
+        gpio_put(Pins::Touch::CS, false);
 
-        spiPeri->transfer(ctrl);
+        spi_write_blocking(spi1, &ctrl, 1);
 
         // FIXME figure out the BUSY signal
-        delayMicroseconds(10);
+        busy_wait_us(10);
 
         // auto count = 0;
         // while (digitalRead(Pins::Touch::BUSY) == HIGH && count < 1000) {
@@ -566,9 +566,9 @@ TouchPanelControllerData readTouchPanelController()
         // }
         
         uint8_t data[2] = { 0 };
-        spiPeri->transfer(data, 2);
+        spi_read_blocking(spi1, 0, data, 2);
 
-        digitalWrite(Pins::Touch::CS, HIGH);
+        gpio_put(Pins::Touch::CS, true);
 
         return (static_cast<int16_t>(data[0]) << 8 | data[1]) >> 3;
         // return ((data[0] << 8) | data[1]) >> 3;
@@ -595,13 +595,13 @@ TouchPanelControllerData readTouchPanelController()
     };
 }
 
-void setup()
+int main()
 {
-    Serial.begin();
+    stdio_init_all();
 
-    delay(3000);
+    sleep_ms(3000);
 
-    printf(PSTR("Initializing..."));
+    printf("Initializing...");
 
     display = std::make_unique<Display>();
     display->clear();
@@ -625,23 +625,12 @@ void setup()
     weatherStation->setClockDate(23, "Wed");
 #endif
 
-    spiPeri.reset(
-        new SPIClassRP2040{
-            spi1,
-            Pins::SPIPeri::TX,
-            Pins::SPIPeri::CS,
-            Pins::SPIPeri::SCK,
-            Pins::SPIPeri::RX
-        }
-    );
+    spi_init(spi1, 4'000'000);
+    spi_set_format(spi1, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
 
-    // i2c.reset(
-    //     new TwoWire{
-    //         i2c0,
-    //         20,
-    //         21
-    //     }
-    // );
+    gpio_set_function(Pins::SPIPeri::TX, GPIO_FUNC_SPI);
+    gpio_set_function(Pins::SPIPeri::SCK, GPIO_FUNC_SPI);
+    gpio_set_function(Pins::SPIPeri::RX, GPIO_FUNC_SPI);
 
     // i2c->begin();
     i2c = std::make_unique<Hardware::I2cDevice>(20, 21);
@@ -704,38 +693,27 @@ void setup()
     }
 #endif
 
-    spiPeri->begin();
-
-    spiPeri->beginTransaction(
-        SPISettings{
-            4000000,
-            MSBFIRST,
-            SPI_MODE0
-        }
-    );
-
-    // pinMode(Pins::BME280::CSB, OUTPUT);
-    // digitalWrite(Pins::BME280::CSB, HIGH);
-
-    pinMode(Pins::NRF24::CE, OUTPUT);
-    digitalWrite(Pins::NRF24::CE, HIGH);
-    pinMode(Pins::NRF24::CSN, OUTPUT);
-    digitalWrite(Pins::NRF24::CSN, HIGH);
-    pinMode(Pins::NRF24::IRQ, INPUT_PULLDOWN);
+    gpio_init(Pins::NRF24::CE);
+    gpio_put(Pins::NRF24::CE, true);
+    gpio_init(Pins::NRF24::CSN);
+    gpio_put(Pins::NRF24::CSN, true);
+    gpio_init(Pins::NRF24::IRQ);
+    gpio_set_dir(Pins::NRF24::IRQ, false);
+    gpio_set_pulls(Pins::NRF24::IRQ, false, true);
 
     nrf24_init(
         &nrf,
         // set_ce
         [] (const nrf24_state_t state) {
-            digitalWrite(Pins::NRF24::CE, state == NRF24_HIGH ? HIGH : LOW);
+            gpio_put(Pins::NRF24::CE, state == NRF24_HIGH ? true : false);
         },
         // set_csn
         [] (const nrf24_state_t state) {
-            digitalWrite(Pins::NRF24::CSN, state == NRF24_HIGH ? HIGH : LOW);
+            gpio_put(Pins::NRF24::CSN, state == NRF24_HIGH ? true : false);
         },
         // spi_exchange
         [] (uint8_t data) {
-            spiPeri->transfer(&data, sizeof(data));
+            spi_write_read_blocking(spi1, &data, &data, 1);
             return data;
         }
     );
@@ -797,15 +775,19 @@ void setup()
         const uint32_t period,
         [[maybe_unused]] void* const intf_ptr
     ) {
-        delayMicroseconds(period);
+        sleep_ms(period);
     };
     bmeInitResult = bme280_init(&bme);
 
     // Touch controller pins
-    pinMode(Pins::Touch::CS, OUTPUT);
-    digitalWrite(Pins::Touch::CS, HIGH);
-    pinMode(Pins::Touch::PENIRQ, INPUT);
-    pinMode(Pins::Touch::BUSY, INPUT_PULLDOWN);
+    gpio_init(Pins::Touch::CS);
+    gpio_set_dir(Pins::Touch::CS, true);
+    gpio_put(Pins::Touch::CS, true);
+    gpio_init(Pins::Touch::PENIRQ);
+    gpio_set_dir(Pins::Touch::PENIRQ, false);
+    gpio_init(Pins::Touch::BUSY);
+    gpio_set_dir(Pins::Touch::BUSY, false);
+    gpio_set_pulls(Pins::Touch::BUSY, false, true);
 
     diagScreen = std::make_unique<DiagScreen>();
 
@@ -826,7 +808,7 @@ void setup()
             false
         )
     ) {
-        printf(PSTR("RTC SetExternalOscillatorDisabled failed"));
+        printf("RTC SetExternalOscillatorDisabled failed");
     }
 
     if (
@@ -835,92 +817,93 @@ void setup()
             true
         )
     ) {
-        printf(PSTR("RTC SetBatteryBackupEnabled failed"));
+        printf("RTC SetBatteryBackupEnabled failed");
     }
 
-    printf(PSTR("Initialization finished"));
-}
+    printf("Initialization finished");
 
-void loop()
-{
+    while (true) {
 #if ENABLE_DIAG_SCREEN
-    static auto updateMillis = 0u;
+        static auto updateMillis = 0u;
 
-    if (millis() - updateMillis >= 1000) {
-        updateMillis = millis();
+        const auto millis = to_ms_since_boot(get_absolute_time());
 
-        printf(PSTR("Painting diagnostics screen"));
+        if (millis - updateMillis >= 1000) {
+            updateMillis = millis;
 
-        stream_sensor_data_forced_mode(&bme);
-        diagScreen->updateNrf24Data();
-        diagScreen->updateTouchPanelControllerData(readTouchPanelController());
-        diagScreen->updateRtcData();
-        diagScreen->updateEeramData();
+            printf("Painting diagnostics screen");
 
-        Painter painter;
-        painter.paintWidget(diagScreen.get());
-    }
+            stream_sensor_data_forced_mode(&bme);
+            diagScreen->updateNrf24Data();
+            diagScreen->updateTouchPanelControllerData(readTouchPanelController());
+            diagScreen->updateRtcData();
+            diagScreen->updateEeramData();
+
+            Painter painter;
+            painter.paintWidget(diagScreen.get());
+        }
 #endif
 
 #if ENABLE_DRAW_TEST
-    Serial.printf("BME280 init result: %d\r\n", bmeInitResult);
-    printf("Running display test");
+        printf("BME280 init result: %d\r\n", bmeInitResult);
+        printf("Running display test");
 
-    display->clear();
+        display->clear();
 
-    for (auto i = 0; i < 240; i += 2) {
-        display->drawLine(0, 0, i, 159);
-        display->update();
-    }
+        for (auto i = 0; i < 240; i += 2) {
+            display->drawLine(0, 0, i, 159);
+            display->update();
+        }
 
-    for (auto i = 158; i > 0; i -= 2) {
-        display->drawLine(0, 0, 239, i);
-        display->update();
-    }
+        for (auto i = 158; i > 0; i -= 2) {
+            display->drawLine(0, 0, 239, i);
+            display->update();
+        }
 
-    nrf24_dump_registers(&nrf);
-    // stream_sensor_data_forced_mode(&bme);
+        nrf24_dump_registers(&nrf);
+        // stream_sensor_data_forced_mode(&bme);
 #endif
 
 #if 0
-    if (millis() - lastUpdateMillis >= 500) {
-        lastUpdateMillis = millis();
+        if (millis() - lastUpdateMillis >= 500) {
+            lastUpdateMillis = millis();
 
-        digitalWrite(LED_BUILTIN, updateLedOn ? HIGH : LOW);
-        updateLedOn = !updateLedOn;
+            digitalWrite(LED_BUILTIN, updateLedOn ? HIGH : LOW);
+            updateLedOn = !updateLedOn;
 
-        printf(fmt::format("{}: update", __func__).c_str());
+            printf(fmt::format("{}: update", __func__).c_str());
 
-        weatherStation->setCurrentTemperature(temperature);
-        weatherStation->setCurrentSensorTemperature(temperature);
-        weatherStation->setCurrentMinimumTemperature(temperature);
-        weatherStation->setCurrentMaximumTemperature(temperature);
-        weatherStation->setCurrentPressure(pressure);
-        weatherStation->setCurrentHumidity(humidity);
-        weatherStation->setCurrentWindSpeed(windSpeed);
-        weatherStation->setCurrentWindGustSpeed(windSpeed);
-        weatherStation->setInternalSensorHumidity(humidity);
-        weatherStation->setInternalSensorTemperature(temperature);
+            weatherStation->setCurrentTemperature(temperature);
+            weatherStation->setCurrentSensorTemperature(temperature);
+            weatherStation->setCurrentMinimumTemperature(temperature);
+            weatherStation->setCurrentMaximumTemperature(temperature);
+            weatherStation->setCurrentPressure(pressure);
+            weatherStation->setCurrentHumidity(humidity);
+            weatherStation->setCurrentWindSpeed(windSpeed);
+            weatherStation->setCurrentWindGustSpeed(windSpeed);
+            weatherStation->setInternalSensorHumidity(humidity);
+            weatherStation->setInternalSensorTemperature(temperature);
 
-        painter->paintWidget(weatherStation.get());
+            painter->paintWidget(weatherStation.get());
 
-        if (++temperature > 30) {
-            temperature = -30;
+            if (++temperature > 30) {
+                temperature = -30;
+            }
+
+            if (++pressure > 1030) {
+                pressure = 980;
+            }
+
+            if (++humidity > 100) {
+                humidity = 0;
+            }
+
+            if (++windSpeed > 120) {
+                windSpeed = 0;
+            }
         }
-
-        if (++pressure > 1030) {
-            pressure = 980;
-        }
-
-        if (++humidity > 100) {
-            humidity = 0;
-        }
-
-        if (++windSpeed > 120) {
-            windSpeed = 0;
-        }
-    }
 #endif
+    }
 }
 
 #ifdef RASPBERRY_PI

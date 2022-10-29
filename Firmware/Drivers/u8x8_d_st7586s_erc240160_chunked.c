@@ -33,11 +33,7 @@
 
 */
 
-#ifdef RASPBERRY_PI
 #include <u8g2.h>
-#else
-#include "clib/u8g2.h"
-#endif
 
 static const uint8_t u8x8_d_st7586s_sleep_on[] = {
   U8X8_START_TRANSFER(),  /* enable chip, delay is part of the transfer start */

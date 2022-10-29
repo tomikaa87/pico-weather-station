@@ -860,8 +860,10 @@ void loop()
 #if ENABLE_DIAG_SCREEN
     static auto updateMillis = 0u;
 
-    if (millis() - updateMillis >= 1000) {
-        updateMillis = millis();
+    const auto millis = to_ms_since_boot(get_absolute_time());
+
+    if (millis - updateMillis >= 1000) {
+        updateMillis = millis;
 
         Serial.println(PSTR("Painting diagnostics screen"));
 
