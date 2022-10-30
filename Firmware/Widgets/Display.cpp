@@ -199,7 +199,7 @@ void Display::setContrast(const uint8_t value)
 
 void Display::setBacklightLevel(const uint8_t value)
 {
-    pwm_set_gpio_level(Pins::BacklightPwm, value);
+    pwm_set_gpio_level(Pins::BacklightPwm, value * value);
 }
 
 void Display::setDrawColor(const Color color)
@@ -326,9 +326,9 @@ void Display::setup()
     const auto blPwmPinSlice = pwm_gpio_to_slice_num(Pins::BacklightPwm);
     auto blPwmConfig = pwm_get_default_config();
     pwm_config_set_clkdiv(&blPwmConfig, 4.f);
-    pwm_config_set_wrap(&blPwmConfig, 255);
+    pwm_config_set_wrap(&blPwmConfig, 255 * 255);
     pwm_init(blPwmPinSlice, &blPwmConfig, true);
-    setBacklightLevel(60);
+    // setBacklightLevel(60);
 
     u8g2_InitDisplay(&_p->u8g2);
     u8g2_SetPowerSave(&_p->u8g2, 0);

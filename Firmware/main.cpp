@@ -30,8 +30,8 @@
 #include "Drivers/EERAM_47xxx.h"
 
 #define ENABLE_DRAW_TEST 0
-#define ENABLE_DIAG_SCREEN 1
-
+#define ENABLE_DIAG_SCREEN 0
+#define SET_RTC_DATETIME 0
 #define TEST_EERAM_PROGRAM_DATA 0
 
 class DiagScreen;
@@ -52,25 +52,11 @@ namespace
     std::unique_ptr<Display> display;
     std::unique_ptr<Screens::WeatherStation> weatherStation;
     std::unique_ptr<Painter> painter;
-    // Screens::WeatherStation weatherStation{ &display };
-    // Painter painter;
-
-    // int temperature = -30;
-    // int pressure = 1000;
-    // int humidity = 50;
-    // int windSpeed = 50;
-
-    // int32_t lastUpdateMillis = 0;
-    // auto updateLedOn = true;
-
-    // std::unique_ptr<SPIClassRP2040> spiPeri;
     std::unique_ptr<Hardware::I2cDevice> i2c;
     std::unique_ptr<Hardware::RealTimeClock> rtc;
     std::unique_ptr<Hardware::EnvironmentSensor> envSens;
     EERAM_47xxx_Device eeram;
-
     nrf24_t nrf;
-
     std::unique_ptr<DiagScreen> diagScreen;
 }
 
@@ -531,25 +517,9 @@ int main()
 
     display = std::make_unique<Display>();
     display->clear();
-    display->setBacklightLevel(20);
+    display->setBacklightLevel(10);
 
-#if 0
     weatherStation = std::make_unique<Screens::WeatherStation>(display.get());
-    painter = std::make_unique<Painter>();
-
-    display->clear();
-
-    // weatherStation.setCurrentTemperature(-88);
-    weatherStation->setCurrentSensorTemperature(-88);
-    // weatherStation.setCurrentPressure(8888);
-    weatherStation->setCurrentHumidity(888);
-    weatherStation->setCurrentWindSpeed(888);
-    weatherStation->setCurrentWindGustSpeed(818);
-    weatherStation->setInternalSensorHumidity(88.8);
-    weatherStation->setInternalSensorTemperature(88.8);
-    weatherStation->setClockTime(12, 34);
-    weatherStation->setClockDate(23, "Wed");
-#endif
 
     gpio_set_function(Pins::SPIPeri::TX, GPIO_FUNC_SPI);
     gpio_set_function(Pins::SPIPeri::SCK, GPIO_FUNC_SPI);
@@ -684,17 +654,17 @@ int main()
 
     nrf24_clear_interrupts(&nrf);
 
-    printf("Initializing DiagScreen\r\n");
-    diagScreen = std::make_unique<DiagScreen>();
+    // printf("Initializing DiagScreen\r\n");
+    // diagScreen = std::make_unique<DiagScreen>();
 
 #if SET_RTC_DATETIME
     if (!
         RTC_MCP7940N_SetDateTime(
             rtc->device(),
-            22, 10, 20, 3, 22, 46, 00, false, false
+            22, 10, 30, 6, 21, 50, 00, false, false
         )
     ) {
-        printf(PSTR("RTC SetDateTime failed\r\n"));
+        printf("RTC SetDateTime failed\r\n");
     }
 #endif
 
@@ -722,15 +692,26 @@ int main()
         *envSens
     };
 
+    uint32_t weatherScreenUpdateTimestamp = 0;
+
+    weatherStation->setCurrentTemperature(0);
+    weatherStation->setCurrentSensorTemperature(0);
+    weatherStation->setCurrentMinimumTemperature(0);
+    weatherStation->setCurrentMaximumTemperature(0);
+    weatherStation->setCurrentPressure(0);
+    weatherStation->setCurrentHumidity(0);
+    weatherStation->setCurrentWindSpeed(0);
+    weatherStation->setCurrentWindGustSpeed(0);
+
     while (true) {
         for (auto& task : tasks) {
             task.get().run();
         }
 
+        const auto millis = to_ms_since_boot(get_absolute_time());
+
 #if ENABLE_DIAG_SCREEN
         static auto updateMillis = 0u;
-
-        const auto millis = to_ms_since_boot(get_absolute_time());
 
         if (millis - updateMillis >= 250) {
             updateMillis = millis;
@@ -767,43 +748,34 @@ int main()
         // stream_sensor_data_forced_mode(&bme);
 #endif
 
-#if 0
-        if (millis() - lastUpdateMillis >= 500) {
-            lastUpdateMillis = millis();
+#if 1
+        if (millis - weatherScreenUpdateTimestamp >= 5000) {
+            weatherScreenUpdateTimestamp = millis;
 
-            digitalWrite(LED_BUILTIN, updateLedOn ? HIGH : LOW);
-            updateLedOn = !updateLedOn;
+            weatherStation->setCurrentPressure(envSens->pressurePa() * 0.01);
+            weatherStation->setInternalSensorHumidity(envSens->relativeHumidity());
+            weatherStation->setInternalSensorTemperature(envSens->temperatureCelsius());
 
-            printf(fmt::format("{}: update\r\n", __func__).c_str());
+            uint8_t y, mo, d, wd, h, m, s;
+            bool m12h, pm;
 
-            weatherStation->setCurrentTemperature(temperature);
-            weatherStation->setCurrentSensorTemperature(temperature);
-            weatherStation->setCurrentMinimumTemperature(temperature);
-            weatherStation->setCurrentMaximumTemperature(temperature);
-            weatherStation->setCurrentPressure(pressure);
-            weatherStation->setCurrentHumidity(humidity);
-            weatherStation->setCurrentWindSpeed(windSpeed);
-            weatherStation->setCurrentWindGustSpeed(windSpeed);
-            weatherStation->setInternalSensorHumidity(humidity);
-            weatherStation->setInternalSensorTemperature(temperature);
+            if (!
+                RTC_MCP7940N_GetDateTime(
+                    rtc->device(),
+                    &y, &mo, &d, &wd, &h, &m, &s, &m12h, &pm
+                )
+            ) {
+                printf("RTC GetDateTime failed\r\n");
+            }
+
+            static constexpr const char* Weekdays[7] = {
+                "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"
+            };
+
+            weatherStation->setClockTime(h, m);
+            weatherStation->setClockDate(d, Weekdays[wd]);
 
             painter->paintWidget(weatherStation.get());
-
-            if (++temperature > 30) {
-                temperature = -30;
-            }
-
-            if (++pressure > 1030) {
-                pressure = 980;
-            }
-
-            if (++humidity > 100) {
-                humidity = 0;
-            }
-
-            if (++windSpeed > 120) {
-                windSpeed = 0;
-            }
         }
 #endif
     }

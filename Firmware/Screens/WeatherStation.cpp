@@ -142,7 +142,9 @@ void WeatherStation::setInternalSensorHumidity(const float value)
 void WeatherStation::setClockTime(const int hours, const int minutes)
 {
     _clockHoursLabel.setText(std::to_string(Utils::clamp(hours, 0, 23)));
-    _clockMinutesLabel.setText(std::to_string(Utils::clamp(minutes, 0, 59)));
+    _clockMinutesLabel.setText(
+        fmt::format("{:02d}", Utils::clamp(minutes, 0, 59))
+    );
 }
 
 void WeatherStation::setClockDate(const int day, const std::string& dayOfWeek)
@@ -457,7 +459,7 @@ void WeatherStation::GraphWidget::onResize()
 
 void WeatherStation::GraphWidget::trimSamples()
 {
-    while (!_samples.empty() && _samples.size() > _rect.width()) {
+    while (!_samples.empty() && _samples.size() > static_cast<std::size_t>(_rect.width())) {
         _samples.pop_front();
     }
 }

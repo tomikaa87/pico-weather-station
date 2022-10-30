@@ -32,6 +32,7 @@ add_library(u8g2
     3rdparty/u8g2/csrc/u8g2_hvline.c
     3rdparty/u8g2/csrc/u8g2_intersection.c
     3rdparty/u8g2/csrc/u8g2_kerning.c
+    3rdparty/u8g2/csrc/u8g2_line.c
     3rdparty/u8g2/csrc/u8g2_ll_hvline.c
     3rdparty/u8g2/csrc/u8g2_setup.c
     3rdparty/u8g2/csrc/u8x8_8x8.c
