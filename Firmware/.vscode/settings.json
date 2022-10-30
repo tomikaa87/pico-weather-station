@@ -3,6 +3,7 @@
         "rtc_mcp7940n.h": "c",
         "eeram_47xxx.h": "c",
         "memory": "cpp",
-        "u8g2.h": "c"
+        "u8g2.h": "c",
+        "*.tcc": "cpp"
     }
 }

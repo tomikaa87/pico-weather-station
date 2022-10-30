@@ -55,13 +55,13 @@ namespace
     // Screens::WeatherStation weatherStation{ &display };
     // Painter painter;
 
-    int temperature = -30;
-    int pressure = 1000;
-    int humidity = 50;
-    int windSpeed = 50;
+    // int temperature = -30;
+    // int pressure = 1000;
+    // int humidity = 50;
+    // int windSpeed = 50;
 
-    int32_t lastUpdateMillis = 0;
-    auto updateLedOn = true;
+    // int32_t lastUpdateMillis = 0;
+    // auto updateLedOn = true;
 
     // std::unique_ptr<SPIClassRP2040> spiPeri;
     std::unique_ptr<Hardware::I2cDevice> i2c;
@@ -343,35 +343,6 @@ namespace Pins
     }
 }
 
-#ifdef RASPBERRY_PI
-char getch()
-{
-    char buf = 0;
-    struct termios old = {0};
-    if (tcgetattr(0, &old) < 0)
-            perror("tcsetattr()");
-    old.c_lflag &= ~ICANON;
-    old.c_lflag &= ~ECHO;
-    old.c_cc[VMIN] = 1;
-    old.c_cc[VTIME] = 0;
-    if (tcsetattr(0, TCSANOW, &old) < 0)
-            perror("tcsetattr ICANON");
-    if (read(0, &buf, 1) < 0)
-            perror ("read()");
-    old.c_lflag |= ICANON;
-    old.c_lflag |= ECHO;
-    if (tcsetattr(0, TCSADRAIN, &old) < 0)
-            perror ("tcsetattr ~ICANON");
-    return (buf);
-}
-
-void signalHandler(const int)
-{
-    display.clear();
-    exit(0);
-}
-#endif
-
 #if 0
 void drawFancyProgressBar(
     u8g2_t* display,
@@ -492,11 +463,11 @@ int8_t stream_sensor_data_forced_mode(struct bme280_dev *dev)
     /* Structure to get the pressure, temperature and humidity values */
     struct bme280_data comp_data;
 
-    /* Recommended mode of operation: Indoor navigation */
+    /* Recommended mode of operation: Weather monitoring */
     dev->settings.osr_h = BME280_OVERSAMPLING_1X;
-    dev->settings.osr_p = BME280_OVERSAMPLING_16X;
-    dev->settings.osr_t = BME280_OVERSAMPLING_2X;
-    dev->settings.filter = BME280_FILTER_COEFF_16;
+    dev->settings.osr_p = BME280_OVERSAMPLING_1X;
+    dev->settings.osr_t = BME280_OVERSAMPLING_1X;
+    dev->settings.filter = BME280_FILTER_COEFF_OFF;
 
     settings_sel = BME280_OSR_PRESS_SEL | BME280_OSR_TEMP_SEL | BME280_OSR_HUM_SEL | BME280_FILTER_SEL;
 
@@ -515,6 +486,8 @@ int8_t stream_sensor_data_forced_mode(struct bme280_dev *dev)
      *  and the oversampling configuration. */
     req_delay = bme280_cal_meas_delay(&dev->settings);
 
+    printf("req_delay: %u\r\n", req_delay);
+
     /* Continuously stream sensor data */
     do
     {
@@ -527,7 +500,7 @@ int8_t stream_sensor_data_forced_mode(struct bme280_dev *dev)
         }
 
         /* Wait for the measurement to complete and print data */
-        busy_wait_ms(req_delay);
+        sleep_ms(req_delay);
         rslt = bme280_get_sensor_data(BME280_ALL, &comp_data, dev);
         if (rslt != BME280_OK)
         {
@@ -535,7 +508,7 @@ int8_t stream_sensor_data_forced_mode(struct bme280_dev *dev)
             break;
         }
 
-        // print_sensor_data(&comp_data);
+        print_sensor_data(&comp_data);
 
         diagScreen->updateBme280Data(comp_data);
     } while (false);
@@ -546,7 +519,7 @@ int8_t stream_sensor_data_forced_mode(struct bme280_dev *dev)
 TouchPanelControllerData readTouchPanelController()
 {
     const auto spiBaudrate = spi_get_baudrate(spi1);
-    spi_set_baudrate(spi1, 1'000'000);
+    spi_set_baudrate(spi1, 500'000);
 
     auto readAdc = [](const uint8_t ctrl) -> int16_t {
         gpio_put(Pins::Touch::CS, false);
@@ -607,13 +580,13 @@ int main()
 {
     stdio_init_all();
 
-    busy_wait_ms(3000);
+    // busy_wait_ms(3000);
 
     printf("Initializing...\r\n");
 
     display = std::make_unique<Display>();
     display->clear();
-    display->setBacklightLevel(40);
+    display->setBacklightLevel(20);
 
 #if 0
     weatherStation = std::make_unique<Screens::WeatherStation>(display.get());
@@ -779,6 +752,14 @@ int main()
         if (!i2c->endTransmission()) {
             printf("bme.read: end failed\r\n");
         }
+        printf("bme.read: a=%02x, l=%u, d=", reg_addr, len);
+        for (auto i = 0u; i < len; ++i) {
+            printf("%02x", reg_data[i]);
+            if (i < len - 1) {
+                printf(",");
+            }
+        }
+        printf("\r\n");
         return BME280_INTF_RET_SUCCESS;
     };
     bme.write = [](
@@ -787,10 +768,18 @@ int main()
         const uint32_t len,
         [[maybe_unused]] void* const intf_ptr
     ) -> BME280_INTF_RET_TYPE {
+        printf("bme.write: a=%x, l=%u, d=", reg_addr, len);
+        for (auto i = 0u; i < len; ++i) {
+            printf("%02x", reg_data[i]);
+            if (i < len - 1) {
+                printf(",");
+            }
+        }
+        printf("\r\n");
         if (!i2c->startTransmission(BME280_I2C_ADDR_PRIM)) {
             printf("bme.write: start failed\r\n");
         }
-        if (!i2c->write(&reg_addr, 1)) {
+        if (!i2c->write(&reg_addr, 1, true)) {
             printf("bme.write: write reg addr failed\r\n");
         }
         if (!i2c->write(reg_data, len)) {
@@ -805,7 +794,7 @@ int main()
         const uint32_t period,
         [[maybe_unused]] void* const intf_ptr
     ) {
-        busy_wait_us(period);
+        sleep_us(period);
     };
     bmeInitResult = bme280_init(&bme);
 
@@ -845,15 +834,19 @@ int main()
     while (true) {
 #if ENABLE_DIAG_SCREEN
         static auto updateMillis = 0u;
+        static auto bmeUpdateMillis = 0u;
 
         const auto millis = to_ms_since_boot(get_absolute_time());
 
-        if (millis - updateMillis >= 1000) {
+        if (millis - bmeUpdateMillis >= 5000) {
+            bmeUpdateMillis = millis;
+            stream_sensor_data_forced_mode(&bme);
+        }
+
+        if (millis - updateMillis >= 250) {
             updateMillis = millis;
 
             printf("Painting diagnostics screen\r\n");
-
-            stream_sensor_data_forced_mode(&bme);
             diagScreen->updateNrf24Data();
             diagScreen->updateTouchPanelControllerData(readTouchPanelController());
             diagScreen->updateRtcData();
@@ -925,326 +918,3 @@ int main()
 #endif
     }
 }
-
-#ifdef RASPBERRY_PI
-int main()
-{
-    signal(SIGTERM, signalHandler);
-    signal(SIGINT, signalHandler);
-
-    display.clear();
-
-#if 1
-    Screens::WeatherStation weatherStation{ &display };
-    // weatherStation.setCurrentTemperature(-88);
-    weatherStation.setCurrentSensorTemperature(-88);
-    // weatherStation.setCurrentPressure(8888);
-    weatherStation.setCurrentHumidity(888);
-    weatherStation.setCurrentWindSpeed(888);
-    weatherStation.setCurrentWindGustSpeed(818);
-    weatherStation.setInternalSensorHumidity(88.8);
-    weatherStation.setInternalSensorTemperature(88.8);
-    weatherStation.setClockTime(12, 34);
-    weatherStation.setClockDate(23, "Wed");
-#else
-    Widget weatherStation{ &display };
-    weatherStation.setRect({ 0, 0, 240, 160 });
-    Image mainScreenImage{ &weatherStation };
-    mainScreenImage.setRect({ 0, 0, 240, 160 });
-    mainScreenImage.setImage(Graphics::WeatherStationBackground, 240, 160);
-#endif
-
-    Painter painter;
-    painter.paintWidget(&weatherStation);
-
-    // return 0;
-
-    int temperature = -30;
-    int pressure = 1000;
-    int humidity = 50;
-    int windSpeed = 50;
-
-    while (true) {
-        weatherStation.setCurrentTemperature(temperature);
-        weatherStation.setCurrentSensorTemperature(temperature);
-        weatherStation.setCurrentMinimumTemperature(temperature);
-        weatherStation.setCurrentMaximumTemperature(temperature);
-        weatherStation.setCurrentPressure(pressure);
-        weatherStation.setCurrentHumidity(humidity);
-        weatherStation.setCurrentWindSpeed(windSpeed);
-        weatherStation.setCurrentWindGustSpeed(windSpeed);
-        weatherStation.setInternalSensorHumidity(humidity);
-        weatherStation.setInternalSensorTemperature(temperature);
-
-        painter.paintWidget(&weatherStation);
-
-        if (++temperature > 30) {
-            temperature = -30;
-        }
-
-        if (++pressure > 1030) {
-            pressure = 980;
-        }
-
-        if (++humidity > 100) {
-            humidity = 0;
-        }
-
-        if (++windSpeed > 120) {
-            windSpeed = 0;
-        }
-
-        std::this_thread::sleep_for(500ms);
-    }
-
-    return 0;
-
-    // Widget screen{ &display };
-    // screen.setRect({ 0, 0, 240, 160 });
-    // screen.setName("screen");
-
-    // // Widget w1{ &screen };
-    // // w1.setName("w1");
-    // // w1.setRect({ 10, 10, 100, 100 });
-
-    // // Widget w1_1{ &w1 };
-    // // w1_1.setName("w1_1");
-    // // w1_1.setRect({ 1, 1, 10, 10 });
-
-    // Label l1{ "This is a label", &screen };
-    // l1.setPos({ 2, 2 });
-    // l1.setWidth(100);
-    // Font font{ Font::Family::PfTempesta7, Font::Style::Compressed };
-    // font.setBold(true);
-    // l1.setFont(font);
-    // l1.setName("label1");
-    // // l1.setBackgroundEnabled(false);
-
-    // Image i1{
-    //     Graphics::Icons::Weather::Cloud,
-    //     Graphics::Icons::Weather::Width,
-    //     Graphics::Icons::Weather::Height,
-    //     &screen
-    // };
-    // i1.setRect({ 2, 30, 70, 70 });
-    // i1.setName("image1");
-    // // i1.setInverted(true);
-
-    // Painter painter;
-
-    // for (auto i = 0; i < 20; ++i) {
-    //     // w1.setPos(w1.pos() + Point{ 1, 1 });
-    //     if (i % 2 == 0)
-    //         l1.setText(fmt::format("ABCD {{[ijklypg Counter]}} = {}", i));
-    //     painter.paintWidget(&screen);
-    // }
-
-    // for (auto image : {
-    //     Graphics::Icons::Weather::Cloud,
-    //     Graphics::Icons::Weather::CloudsWithIceCubes,
-    //     Graphics::Icons::Weather::CloudsWithRaindrops,
-    //     Graphics::Icons::Weather::CloudsWithRaindropsAndIceCubes,
-    //     Graphics::Icons::Weather::CloudsWithRaindropsAndSnowflakes,
-    //     Graphics::Icons::Weather::CloudsWithSleet,
-    //     Graphics::Icons::Weather::CloudsWithSnowflakes,
-    //     Graphics::Icons::Weather::CloudWithRaindrops,
-    //     Graphics::Icons::Weather::CloudWithSnowflakes,
-    //     Graphics::Icons::Weather::CloudWithThunderbolt,
-    //     Graphics::Icons::Weather::Fire,
-    //     Graphics::Icons::Weather::Fog,
-    //     Graphics::Icons::Weather::Moon,
-    //     Graphics::Icons::Weather::MoonWithCloud,
-    //     Graphics::Icons::Weather::MoonWithCloudAndRaindrops,
-    //     Graphics::Icons::Weather::MoonWithCloudAndSnowflakes,
-    //     Graphics::Icons::Weather::MoonWithCloudAndThunderbolt,
-    //     Graphics::Icons::Weather::MoonWithClouds,
-    //     Graphics::Icons::Weather::MoonWithCloudsAndRaindrops,
-    //     Graphics::Icons::Weather::MoonWithCloudsAndSnowflakes,
-    //     Graphics::Icons::Weather::MoonWithCloudsAndThunderbolt,
-    //     Graphics::Icons::Weather::MoonWithMoreClouds,
-    //     Graphics::Icons::Weather::QuestionMark,
-    //     Graphics::Icons::Weather::Snowflake,
-    //     Graphics::Icons::Weather::Sun,
-    //     Graphics::Icons::Weather::SunHot,
-    //     Graphics::Icons::Weather::SunWithCloud,
-    //     Graphics::Icons::Weather::SunWithCloudAndRaindrops,
-    //     Graphics::Icons::Weather::SunWithCloudAndSnowflakes,
-    //     Graphics::Icons::Weather::SunWithCloudAndThunderbolt,
-    //     Graphics::Icons::Weather::SunWithClouds,
-    //     Graphics::Icons::Weather::SunWithCloudsAndRaindrops,
-    //     Graphics::Icons::Weather::SunWithCloudsAndSnowflakes,
-    //     Graphics::Icons::Weather::SunWithCloudsAndThunderbolt,
-    //     Graphics::Icons::Weather::SunWithMoreClouds,
-    //     Graphics::Icons::Weather::Whirlpools
-    // }) {
-    //     i1.setImage(image, 70, 70);
-    //     painter.paintWidget(&screen);
-    // }
-
-    // return 0;
-
-    // display.drawBitmap(
-    //     { 0, 0 },
-    //     Graphics::MainScreen_width,
-    //     Graphics::MainScreen_height,
-    //     Graphics::MainScreen_bits
-    // );
-    // display.drawText({ 20, 140 }, "It works!");
-
-    // auto u8g2 = setup_display();
-    // g_u8g2 = &u8g2;
-
-    std::cout << "drawing test picture" << std::endl;
-
-    // u8g2_ClearBuffer(&u8g2);
-    // u8g2_DrawXBM(&u8g2, 0, 0, Graphics::MainScreen_width, Graphics::MainScreen_height, Graphics::MainScreen_bits);
-    // u8g2_SetDrawColor(&u8g2, 1);
-    // u8g2_DrawCircle(&u8g2, 20, 20, 10, U8G2_DRAW_ALL);
-    // u8g2_SetFont(&u8g2, Fonts::PFT7Condensed);
-    // u8g2_DrawStr(&u8g2, 0, 140, "Hello");
-    // u8g2_SendBuffer(&u8g2);
-
-    // u8g2_SetDrawColor(&u8g2, 1);
-    // u8g2_SetFont(&u8g2, u8g2_font_nokiafc22_tr);
-    // uint8_t counter = 0;
-
-    // std::cout << "starting main loop\n";
-
-    // while (true) {
-    //     u8g2_ClearBuffer(&u8g2);
-
-    //     u8g2_SendBuffer(&u8g2);
-    //     return 0;
-
-    //     u8g2_DrawStr(&u8g2, 0, 7, std::to_string(counter++).c_str());
-    //     u8g2_SendBuffer(&u8g2);
-    //     // delay(100);
-    // }
-
-    int w = 128;
-    int h = 10;
-    int progress = 50;
-
-    uint8_t contrast = 60;
-
-    while (true) {
-        const auto ch = ::getch();
-        auto update = true;
-        auto updateLabelOnly = false;
-
-        switch (ch) {
-            case 'w':
-                if (h > 0) {
-                    --h;
-                }
-                break;
-            case 's':
-                if (h < 63) {
-                    ++h;
-                }
-                break;
-            case 'a':
-                if (w > 0) {
-                    --w;
-                }
-                break;
-            case 'd':
-                if (w < 127) {
-                    ++w;
-                }
-                break;
-            case 'q':
-                if (progress > 0) {
-                    --progress;
-                }
-                break;
-            case 'e':
-                if (progress < 100) {
-                    ++progress;
-                }
-                break;
-            case 'z':
-                --contrast;
-                // u8g2_SetContrast(&u8g2, contrast);
-                std::cout << "contrast=" << static_cast<int>(contrast) << '\n';
-                updateLabelOnly = true;
-                break;
-            case 'x':
-                ++contrast;
-                // u8g2_SetContrast(&u8g2, contrast);
-                std::cout << "contrast=" << static_cast<int>(contrast) << '\n';
-                updateLabelOnly = true;
-                break;
-            case ' ':
-                return 0;
-            default:
-                break;
-        }
-
-#if 0
-        if (update) {
-            u8g2_ClearBuffer(&u8g2);
-            if (updateLabelOnly) {
-                u8g2_DrawXBM(&u8g2, 0, 0, Graphics::MainScreen_width, Graphics::MainScreen_height, Graphics::MainScreen_bits);
-                u8g2_SetFont(&u8g2, Fonts::PFT7Condensed);
-                u8g2_DrawStr(&u8g2, 0, 140, fmt::format("Contrast = {}", contrast).c_str());
-            } else {
-                drawFancyProgressBar(&u8g2, 0, 0, w, h, progress);
-            }
-            u8g2_SendBuffer(&u8g2);
-        }
-#endif
-    }
-
-    // // Background
-    // u8g2_SetDrawColor(&u8g2, 1);
-    // u8g2_DrawRBox(&u8g2, 0, 20, 127, 10, 1);
-    // u8g2_DrawRBox(&u8g2, 1, 21, 127, 10, 1);
-    // // Empty space for the bar
-    // u8g2_SetDrawColor(&u8g2, 0);
-    // u8g2_DrawRBox(&u8g2, 1, 21, 125, 8, 1);
-    // // The bar itself
-    // u8g2_SetDrawColor(&u8g2, 1);
-    // for (auto i = 0u; i < 64; ++i) {
-    //     if (i % 2 == 0) {
-    //         for (auto j = 0u; j < 3; ++j) {
-    //             u8g2_DrawPixel(&u8g2, i + 3, 22 + j * 2);
-    //         }
-    //     } else {
-    //         for (auto j = 0u; j < 3; ++j) {
-    //             u8g2_DrawPixel(&u8g2, i + 3, 22 + j * 2 + 1);
-    //         }
-    //     }
-    // }
-
-    // u8g2_SetFont(&u8g2, PFT7Condensed);
-    // u8g2_SetDrawColor(&u8g2, 1);
-    // u8g2_DrawStr(&u8g2, 0, 40, "PF Tempesta 7 Condensed");
-
-    // u8g2_SendBuffer(&u8g2);
-
-#if 0
-    ProgressBar progressBar{ u8g2 };
-    progressBar.setRect(0, 0, 128, 10);
-
-    // progressBar.setPosition(100);
-    // u8g2_SendBuffer(&u8g2);
-
-    int pos = 100;
-    while (true) {
-        progressBar.setPosition(pos);
-        progressBar.setText("Pos: " + std::to_string(pos) + "/100");
-        progressBar.update();
-        ++pos;
-        if (pos >= 100) {
-            pos = 0;
-        }
-        u8g2_SendBuffer(&u8g2);
-    }
-#endif
-
-    std::cout << "Works\n";
-    return 0;
-}
-
-#endif
