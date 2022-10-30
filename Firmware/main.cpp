@@ -44,7 +44,6 @@ struct TouchPanelControllerData
         int16_t z2 = 0;
         int16_t x = 0;
         int16_t y = 0;
-        int16_t temp = 0;
     } raw;
 };
 
@@ -171,12 +170,11 @@ public:
     {
         _touchPanelLabel.setText(
             fmt::format(
-                "Touch: Z1={}, Z2={}, X={}, Y={}, Tmp={}",
+                "Touch: Z1={}, Z2={}, X={}, Y={}",
                 data.raw.z1,
                 data.raw.z2,
                 data.raw.x,
-                data.raw.y,
-                data.raw.temp
+                data.raw.y
             )
         );
     }
@@ -418,69 +416,116 @@ void drawFancyProgressBar(
 
 TouchPanelControllerData readTouchPanelController()
 {
-    const auto spiBaudrate = spi_get_baudrate(spi1);
-    spi_set_baudrate(spi1, 500'000);
+    // const auto spiBaudrate = spi_get_baudrate(spi1);
+    // spi_set_baudrate(spi1, 100'000);
 
     auto readAdc = [](const uint8_t ctrl) -> int16_t {
         gpio_put(Pins::Touch::CS, false);
 
         spi_write_blocking(spi1, &ctrl, 1);
 
-        // FIXME figure out the BUSY signal
-        // busy_wait_us(10);
-
-        // auto count = 0u;
-        // while (gpio_get(Pins::Touch::BUSY) && count < 10000u) {
-        //     busy_wait_us(1);
-        //     ++count;
-        // }
-
-        // if (count >= 500) {
-        //     printf("%s: busy wait timed out\r\n", __FUNCTION__);
-        // }
+        busy_wait_ms(1);
         
         uint8_t data[2] = { 0 };
-        spi_read_blocking(spi1, 0, data, 2);
+        spi_read_blocking(spi1, 0, data, sizeof(data));
 
         gpio_put(Pins::Touch::CS, true);
 
+        // printf("readAdc: ctrl=%02x, data=%02x %02x\r\n", ctrl, data[0], data[1]);
+
         return (static_cast<int16_t>(data[0]) << 8 | data[1]) >> 3;
-        // return ((data[0] << 8) | data[1]) >> 3;
     };
 
-    // A2 A1 A0
-    //  0  0  1 -> XP+IN Y-position
-    //  0  1  1 -> XP+IN Z1-position
-    //  1  0  0 -> YN+IN Z2-position
-    //  1  0  1 -> YP+IN X-position
+    auto bestTwoAvg = [](const int16_t x, const int16_t y, const int16_t z) {
+        const int16_t da = (x > y) ? x - y : y - x;
+        const int16_t db = (x > z) ? x - z : z - x;
+        const int16_t dc = (z > y) ? z - y : y - z;
 
-    // Control byte:
-    //      S A2 A1 A0 MODE SFR/nDFR PD1 PD0
-    // B1 = 1  0  1  1    0        0   0   1
+        int16_t reta = 0;
 
-    // Dummy read to turn off the internal reference
-    readAdc(0b10110001);
+        if (da <= db && da <= dc) {
+            reta = (x + y) >> 1;
+        } else if (db <= da && db <= dc) {
+            reta = (x + z) >> 1;
+        } else {
+            reta = (y + z) >> 1;
+        }
 
-    TouchPanelControllerData data{
-        .raw = TouchPanelControllerData::Raw{
-            .z1 =   readAdc(0b10110001),
-            .z2 =   readAdc(0b11000001),
-            .x =    readAdc(0b11010001),
-            .y =    readAdc(0b10010001),
-            .temp = readAdc(0b10000111)
+        return reta;
+    };
+
+    auto normalize = [](const int16_t value, const int16_t min, const int16_t max) -> int16_t {
+        if (value <= min) {
+            return 0;
+        } else if (value >= max) {
+            return 0xfff;
+        } else {
+            return (int16_t)((int) 0xfff * (value - min) / (max - min));
         }
     };
 
-    spi_set_baudrate(spi1, spiBaudrate);
+    const int16_t touchPressure[] = {
+        readAdc(0xB1),
+        readAdc(0xC2)
+    };
+    
+    // Dummy Y measurement to avoid noise
+    readAdc(0xD1);
 
-    return data;
+    const int16_t data[] = {
+        readAdc(0x91), // Y
+        readAdc(0xD1), // X
+        readAdc(0x91), // Y
+        readAdc(0xD1), // X
+        readAdc(0x91), // Y
+        readAdc(0xD0), // X + Power-Down
+    };
+
+    // spi_set_baudrate(spi1, spiBaudrate);
+
+    const auto zRaw = touchPressure[0] + 0xfff - touchPressure[1];
+
+    if (zRaw <= 3500) {
+        const auto xRaw = bestTwoAvg(data[1], data[3], data[5]);
+        const auto yRaw = bestTwoAvg(data[0], data[2], data[4]);
+
+        static int16_t xMin = 0xfff, xMax = 0, yMin = 0xfff, yMax = 0;
+
+        xMin = std::min(xMin, xRaw);
+        xMax = std::max(xMax, xRaw);
+        yMin = std::min(yMin, yRaw);
+        yMax = std::max(yMax, yRaw);
+
+        const auto x = normalize(xRaw, xMin, xMax);
+        const auto y = normalize(yRaw, yMin, yMax);
+
+        const int16_t xDisp = x * 240 / 0xfff;
+        const int16_t yDisp = y * 160 / 0xfff;
+
+        printf(
+            "Touch: xRaw=%d, yRaw=%d, zRaw=%d, Z1=%d, Z2=%d, xMin=%d, xMax=%d, yMin=%d, yMax=%d, xDisp=%d, yDisp=%d\r\n",
+            xRaw, yRaw, zRaw, touchPressure[0], touchPressure[1],
+            xMin, xMax, yMin, yMax, xDisp, yDisp
+        );
+
+        return TouchPanelControllerData{
+            .raw = TouchPanelControllerData::Raw{
+                .z1 = touchPressure[0],
+                .z2 = touchPressure[1],
+                .x = xRaw,
+                .y = yRaw
+            }
+        };
+    }
+
+    return {};
 }
 
 int main()
 {
     stdio_init_all();
 
-    // busy_wait_ms(3000);
+    busy_wait_ms(3000);
 
     printf("Initializing...\r\n");
 
@@ -510,13 +555,17 @@ int main()
     gpio_set_function(Pins::SPIPeri::SCK, GPIO_FUNC_SPI);
     gpio_set_function(Pins::SPIPeri::RX, GPIO_FUNC_SPI);
 
-    spi_init(spi1, 4'000'000);
+    spi_init(spi1, 2'000'000);
     spi_set_format(spi1, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
 
+    printf("Initializing I2C\r\n");
     i2c = std::make_unique<Hardware::I2cDevice>(20, 21);
+    printf("Initializing EnvironmentSensor\r\n");
     envSens = std::make_unique<Hardware::EnvironmentSensor>(*i2c);
+    printf("Initializing RTC\r\n");
     rtc = std::make_unique<Hardware::RealTimeClock>(*i2c);
 
+    printf("Initializing EERAM\r\n");
     eeram.a1 = 0;
     eeram.a2 = 0;
 
@@ -574,6 +623,7 @@ int main()
     }
 #endif
 
+    printf("Initializing touch controller pins\r\n");
     // Touch controller pins
     gpio_init(Pins::Touch::CS);
     gpio_set_dir(Pins::Touch::CS, true);
@@ -584,6 +634,9 @@ int main()
     gpio_set_dir(Pins::Touch::BUSY, false);
     gpio_set_pulls(Pins::Touch::BUSY, false, true);
 
+    printf("BUSY=%u\r\n", gpio_get(Pins::Touch::BUSY));
+
+    printf("Initializing NRF24 pins\r\n");
     gpio_init(Pins::NRF24::CE);
     gpio_set_dir(Pins::NRF24::CE, true);
     gpio_put(Pins::NRF24::CE, true);
@@ -594,6 +647,7 @@ int main()
     gpio_set_dir(Pins::NRF24::IRQ, false);
     gpio_set_pulls(Pins::NRF24::IRQ, false, true);
 
+    printf("Initializing NRF24\r\n");
     nrf24_init(
         &nrf,
         // set_ce
@@ -630,6 +684,7 @@ int main()
 
     nrf24_clear_interrupts(&nrf);
 
+    printf("Initializing DiagScreen\r\n");
     diagScreen = std::make_unique<DiagScreen>();
 
 #if SET_RTC_DATETIME

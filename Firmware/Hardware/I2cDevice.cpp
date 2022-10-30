@@ -4,7 +4,7 @@
 
 #include <cstdio>
 
-#define DEBUG_I2C_FUNCTIONS 1
+#define DEBUG_I2C_FUNCTIONS 0
 
 namespace Hardware
 {
@@ -17,17 +17,23 @@ namespace Hardware
         gpio_set_function(sdaPin, GPIO_FUNC_I2C);
         gpio_set_function(sclPin, GPIO_FUNC_I2C);
 
-        const auto baudrate = i2c_init(i2c0, 100 * 1000);
+        [[maybe_unused]] const auto baudrate = i2c_init(i2c0, 400'000);
+#if DEBUG_I2C_FUNCTIONS
         printf("I2cDevice: baudrate: %u\r\n", baudrate);
+#endif
     }
 
     bool I2cDevice::startTransmission(const uint8_t address)
     {
+#if DEBUG_I2C_FUNCTIONS
         printf("I2cDevice::startTransmission: address=%u\r\n", address);
+#endif
 
         // Another transmission is already in progress
         if (address != _currentAddress && _currentAddress != 0) {
+#if DEBUG_I2C_FUNCTIONS
             printf("I2cDevice::startTransmission: another transmission is in progress\r\n`");
+#endif
             return false;
         }
 
@@ -41,10 +47,12 @@ namespace Hardware
             i2c0->restart_on_next = true;
         }
 
+#if DEBUG_I2C_FUNCTIONS
         printf(
             "I2cDevice::startTransmission: i2c0->restart_on_next=%u\r\n",
             i2c0->restart_on_next
         );
+#endif
 
         _currentAddress = address;
 
@@ -53,10 +61,14 @@ namespace Hardware
 
     bool I2cDevice::endTransmission()
     {
+#if DEBUG_I2C_FUNCTIONS
         printf("I2cDevice::endTransmission: address=%u\r\n", _currentAddress);
+#endif
 
         if (_currentAddress == 0) {
+#if DEBUG_I2C_FUNCTIONS
             printf("I2cDevice::endTransmission: no transmission is in progress\r\n");
+#endif
             return false;
         }
 
@@ -68,11 +80,11 @@ namespace Hardware
     bool I2cDevice::write(
         const uint8_t* const data,
         const size_t length,
-        [[maybe_unused]] const bool noStop
+        const bool noStop
     ) {
+#if DEBUG_I2C_FUNCTIONS
         printf("I2cDevice::write: address=%u, length=%u\r\n", _currentAddress, length);
 
-#if DEBUG_I2C_FUNCTIONS
         printf(
             "I2cDevice::write: data=%p, length=%u, noStop=%u\r\n",
             data,
@@ -113,12 +125,16 @@ namespace Hardware
     bool I2cDevice::read(
         uint8_t* const data,
         const size_t length,
-        [[maybe_unused]] const bool noStop
+        const bool noStop
     ) {
+#if DEBUG_I2C_FUNCTIONS
         printf("I2cDevice::read: address=%u, length=%u\r\n", _currentAddress, length);
+#endif
 
         if (_currentAddress == 0) {
+#if DEBUG_I2C_FUNCTIONS
             printf("I2cDevice::read: no transmission is in progress");
+#endif
             return false;
         }
 

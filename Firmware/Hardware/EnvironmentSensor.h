@@ -33,6 +33,7 @@ namespace Hardware
             uint32_t requiredMeasurementDelay = 0;
             uint32_t updateTimestamp = 0;
             uint32_t updateIntervalMs = 5000;
+            float pcbHeatTemperatureOffset = 0;
         } _bme280;
 
         int setupBme280();

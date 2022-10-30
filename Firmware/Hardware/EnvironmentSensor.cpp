@@ -18,7 +18,8 @@ namespace Hardware
 
     float EnvironmentSensor::temperatureCelsius() const
     {
-        return _bme280.lastReading.temperature;
+        return _bme280.lastReading.temperature
+            + _bme280.pcbHeatTemperatureOffset;
     }
 
     float EnvironmentSensor::pressurePa() const
@@ -125,6 +126,7 @@ namespace Hardware
             sleep_us(period);
         };
 
+        printf("Initializing BME280\r\n");
         _bme280.initResult = bme280_init(&_bme280.dev);
 
         if (_bme280.initResult != 0) {
@@ -141,6 +143,8 @@ namespace Hardware
             | BME280_OSR_TEMP_SEL
             | BME280_OSR_HUM_SEL
             | BME280_FILTER_SEL;
+
+        printf("Configuring BME280 sensor settings\r\n");
 
         /* Set the sensor settings */
         auto result = bme280_set_sensor_settings(settingsSel, &_bme280.dev);
