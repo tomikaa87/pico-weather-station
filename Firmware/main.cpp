@@ -406,7 +406,6 @@ TouchPanelControllerData readTouchPanelController()
     // spi_set_baudrate(spi1, 100'000);
 
     auto readAdc = [](const uint8_t ctrl) -> int16_t {
-        gpio_put(Pins::Touch::CS, false);
 
         spi_write_blocking(spi1, &ctrl, 1);
 
@@ -414,8 +413,6 @@ TouchPanelControllerData readTouchPanelController()
         
         uint8_t data[2] = { 0 };
         spi_read_blocking(spi1, 0, data, sizeof(data));
-
-        gpio_put(Pins::Touch::CS, true);
 
         // printf("readAdc: ctrl=%02x, data=%02x %02x\r\n", ctrl, data[0], data[1]);
 
@@ -450,6 +447,8 @@ TouchPanelControllerData readTouchPanelController()
         }
     };
 
+    gpio_put(Pins::Touch::CS, false);
+
     const int16_t touchPressure[] = {
         readAdc(0xB1),
         readAdc(0xC2)
@@ -467,11 +466,14 @@ TouchPanelControllerData readTouchPanelController()
         readAdc(0xD0), // X + Power-Down
     };
 
+    gpio_put(Pins::Touch::CS, true);
+
     // spi_set_baudrate(spi1, spiBaudrate);
 
     const auto zRaw = touchPressure[0] + 0xfff - touchPressure[1];
 
-    if (zRaw <= 3500) {
+    // FIXME zRaw doesn't seem to be reliable
+    if (touchPressure[0] <= 1000) {
         const auto xRaw = bestTwoAvg(data[1], data[3], data[5]);
         const auto yRaw = bestTwoAvg(data[0], data[2], data[4]);
 
@@ -709,24 +711,26 @@ int main()
         }
 
         const auto millis = to_ms_since_boot(get_absolute_time());
-
-#if ENABLE_DIAG_SCREEN
         static auto updateMillis = 0u;
-
         if (millis - updateMillis >= 250) {
             updateMillis = millis;
+
+            [[maybe_unused]] const auto touchPanelData = readTouchPanelController();
+    
+#if ENABLE_DIAG_SCREEN
+
 
             printf("Painting diagnostics screen\r\n");
             diagScreen->updateBme280Data();
             diagScreen->updateNrf24Data();
-            diagScreen->updateTouchPanelControllerData(readTouchPanelController());
+            diagScreen->updateTouchPanelControllerData();
             diagScreen->updateRtcData();
             diagScreen->updateEeramData();
 
             Painter painter;
             painter.paintWidget(diagScreen.get());
-        }
 #endif
+        }
 
 #if ENABLE_DRAW_TEST
         printf("BME280 init result: %d\r\n", bmeInitResult);
