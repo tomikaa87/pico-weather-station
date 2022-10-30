@@ -12,12 +12,13 @@
 #include "Widgets/Widget.h"
 
 #include <algorithm>
+#include <array>
 #include <string>
 
 #include <fmt/core.h>
 
 #include "Drivers/nrf24.h"
-#include "Drivers/bme280.h"
+#include "Hardware/EnvironmentSensor.h"
 #include "Hardware/I2cDevice.h"
 #include "Hardware/RealTimeClock.h"
 
@@ -66,11 +67,10 @@ namespace
     // std::unique_ptr<SPIClassRP2040> spiPeri;
     std::unique_ptr<Hardware::I2cDevice> i2c;
     std::unique_ptr<Hardware::RealTimeClock> rtc;
+    std::unique_ptr<Hardware::EnvironmentSensor> envSens;
     EERAM_47xxx_Device eeram;
 
     nrf24_t nrf;
-    struct bme280_dev bme;
-    int bmeInitResult = 0;
 
     std::unique_ptr<DiagScreen> diagScreen;
 }
@@ -126,15 +126,15 @@ public:
         setupLabel(_eeramStatusLabel);
     }
 
-    void updateBme280Data(const struct bme280_data& data)
+    void updateBme280Data()
     {
         _bme280Label.setText(
             fmt::format(
                 "BME280: init={}, t={:0.2f}C, p={:0.2f}hPa, h={:0.2f}%",
-                bmeInitResult,
-                data.temperature,
-                data.pressure * 0.01,
-                data.humidity
+                envSens->bme280InitResult(),
+                envSens->temperatureCelsius(),
+                envSens->pressurePa() * 0.01,
+                envSens->relativeHumidity()
             )
         );
     }
@@ -315,11 +315,6 @@ private:
 
 namespace Pins
 {
-    namespace BME280
-    {
-        constexpr auto CSB = 4;
-    }
-
     namespace NRF24
     {
         constexpr auto IRQ = 16;
@@ -421,101 +416,6 @@ void drawFancyProgressBar(
 }
 #endif
 
-/*!
- * @brief This API used to print the sensor temperature, pressure and humidity data.
- */
-void print_sensor_data(struct bme280_data *comp_data)
-{
-    float temp, press, hum;
-
-#ifdef BME280_FLOAT_ENABLE
-    temp = comp_data->temperature;
-    press = 0.01 * comp_data->pressure;
-    hum = comp_data->humidity;
-#else
-#ifdef BME280_64BIT_ENABLE
-    temp = 0.01f * comp_data->temperature;
-    press = 0.0001f * comp_data->pressure;
-    hum = 1.0f / 1024.0f * comp_data->humidity;
-#else
-    temp = 0.01f * comp_data->temperature;
-    press = 0.01f * comp_data->pressure;
-    hum = 1.0f / 1024.0f * comp_data->humidity;
-#endif
-#endif
-    printf("%0.2lf deg C, %0.2lf hPa, %0.2lf%%\r\n", temp, press, hum);
-}
-
-/*!
- * @brief This API reads the sensor temperature, pressure and humidity data in forced mode.
- */
-int8_t stream_sensor_data_forced_mode(struct bme280_dev *dev)
-{
-    /* Variable to define the result */
-    int8_t rslt = BME280_OK;
-
-    /* Variable to define the selecting sensors */
-    uint8_t settings_sel = 0;
-
-    /* Variable to store minimum wait time between consecutive measurement in force mode */
-    uint32_t req_delay;
-
-    /* Structure to get the pressure, temperature and humidity values */
-    struct bme280_data comp_data;
-
-    /* Recommended mode of operation: Weather monitoring */
-    dev->settings.osr_h = BME280_OVERSAMPLING_1X;
-    dev->settings.osr_p = BME280_OVERSAMPLING_1X;
-    dev->settings.osr_t = BME280_OVERSAMPLING_1X;
-    dev->settings.filter = BME280_FILTER_COEFF_OFF;
-
-    settings_sel = BME280_OSR_PRESS_SEL | BME280_OSR_TEMP_SEL | BME280_OSR_HUM_SEL | BME280_FILTER_SEL;
-
-    /* Set the sensor settings */
-    rslt = bme280_set_sensor_settings(settings_sel, dev);
-    if (rslt != BME280_OK)
-    {
-        printf("Failed to set sensor settings (code %+d).\r\n", rslt);
-
-        return rslt;
-    }
-
-    // printf("Temperature, Pressure, Humidity\r\n");
-
-    /*Calculate the minimum delay required between consecutive measurement based upon the sensor enabled
-     *  and the oversampling configuration. */
-    req_delay = bme280_cal_meas_delay(&dev->settings);
-
-    printf("req_delay: %u\r\n", req_delay);
-
-    /* Continuously stream sensor data */
-    do
-    {
-        /* Set the sensor to forced mode */
-        rslt = bme280_set_sensor_mode(BME280_FORCED_MODE, dev);
-        if (rslt != BME280_OK)
-        {
-            printf("Failed to set sensor mode (code %+d).\r\n", rslt);
-            break;
-        }
-
-        /* Wait for the measurement to complete and print data */
-        sleep_ms(req_delay);
-        rslt = bme280_get_sensor_data(BME280_ALL, &comp_data, dev);
-        if (rslt != BME280_OK)
-        {
-            printf("Failed to get sensor data (code %+d).\r\n", rslt);
-            break;
-        }
-
-        print_sensor_data(&comp_data);
-
-        diagScreen->updateBme280Data(comp_data);
-    } while (false);
-
-    return rslt;
-}
-
 TouchPanelControllerData readTouchPanelController()
 {
     const auto spiBaudrate = spi_get_baudrate(spi1);
@@ -613,8 +513,8 @@ int main()
     spi_init(spi1, 4'000'000);
     spi_set_format(spi1, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
 
-    // i2c->begin();
     i2c = std::make_unique<Hardware::I2cDevice>(20, 21);
+    envSens = std::make_unique<Hardware::EnvironmentSensor>(*i2c);
     rtc = std::make_unique<Hardware::RealTimeClock>(*i2c);
 
     eeram.a1 = 0;
@@ -730,74 +630,6 @@ int main()
 
     nrf24_clear_interrupts(&nrf);
 
-    bme.intf = BME280_I2C_INTF;
-    bme.read = [](
-        const uint8_t reg_addr,
-        uint8_t* const reg_data,
-        const uint32_t len,
-        [[maybe_unused]] void* const intf_ptr
-    ) -> BME280_INTF_RET_TYPE {
-        if (!i2c->startTransmission(BME280_I2C_ADDR_PRIM)) {
-            printf("bme.read: start failed\r\n");
-        }
-        if (!i2c->write(&reg_addr, 1)) {
-            printf("bme.read: write failed\r\n");
-        }
-        if (!i2c->startTransmission(BME280_I2C_ADDR_PRIM)) {
-            printf("bme.read: restart failed\r\n");
-        }
-        if (!i2c->read(reg_data, len)) {
-            printf("bme.read: read failed\r\n");
-        }
-        if (!i2c->endTransmission()) {
-            printf("bme.read: end failed\r\n");
-        }
-        printf("bme.read: a=%02x, l=%u, d=", reg_addr, len);
-        for (auto i = 0u; i < len; ++i) {
-            printf("%02x", reg_data[i]);
-            if (i < len - 1) {
-                printf(",");
-            }
-        }
-        printf("\r\n");
-        return BME280_INTF_RET_SUCCESS;
-    };
-    bme.write = [](
-        const uint8_t reg_addr,
-        const uint8_t* const reg_data,
-        const uint32_t len,
-        [[maybe_unused]] void* const intf_ptr
-    ) -> BME280_INTF_RET_TYPE {
-        printf("bme.write: a=%x, l=%u, d=", reg_addr, len);
-        for (auto i = 0u; i < len; ++i) {
-            printf("%02x", reg_data[i]);
-            if (i < len - 1) {
-                printf(",");
-            }
-        }
-        printf("\r\n");
-        if (!i2c->startTransmission(BME280_I2C_ADDR_PRIM)) {
-            printf("bme.write: start failed\r\n");
-        }
-        if (!i2c->write(&reg_addr, 1, true)) {
-            printf("bme.write: write reg addr failed\r\n");
-        }
-        if (!i2c->write(reg_data, len)) {
-            printf("bme.write: write data failed\r\n");
-        }
-        if (!i2c->endTransmission()) {
-            printf("bme.read: end failed\r\n");
-        }
-        return BME280_INTF_RET_SUCCESS;
-    };
-    bme.delay_us = [](
-        const uint32_t period,
-        [[maybe_unused]] void* const intf_ptr
-    ) {
-        sleep_us(period);
-    };
-    bmeInitResult = bme280_init(&bme);
-
     diagScreen = std::make_unique<DiagScreen>();
 
 #if SET_RTC_DATETIME
@@ -831,22 +663,25 @@ int main()
 
     printf("Initialization finished\r\n");
 
+    const auto tasks = std::array<std::reference_wrapper<ITask>, 1>{
+        *envSens
+    };
+
     while (true) {
+        for (auto& task : tasks) {
+            task.get().run();
+        }
+
 #if ENABLE_DIAG_SCREEN
         static auto updateMillis = 0u;
-        static auto bmeUpdateMillis = 0u;
 
         const auto millis = to_ms_since_boot(get_absolute_time());
-
-        if (millis - bmeUpdateMillis >= 5000) {
-            bmeUpdateMillis = millis;
-            stream_sensor_data_forced_mode(&bme);
-        }
 
         if (millis - updateMillis >= 250) {
             updateMillis = millis;
 
             printf("Painting diagnostics screen\r\n");
+            diagScreen->updateBme280Data();
             diagScreen->updateNrf24Data();
             diagScreen->updateTouchPanelControllerData(readTouchPanelController());
             diagScreen->updateRtcData();
