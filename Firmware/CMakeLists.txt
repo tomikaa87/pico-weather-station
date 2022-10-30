@@ -107,7 +107,6 @@ add_executable(PicoWeatherStationFirmware
 target_include_directories(PicoWeatherStationFirmware
     PRIVATE
         3rdparty/json/single_include
-        3rdparty/u8g2/csrc
 )
 
 target_link_libraries(PicoWeatherStationFirmware

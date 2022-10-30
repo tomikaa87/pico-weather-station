@@ -6,7 +6,7 @@
 #include <iostream>
 #include <functional>
 
-#define DEBUG_PAINTER 1
+#define DEBUG_PAINTER 0
 
 Painter::Painter()
 {}
@@ -39,7 +39,9 @@ void Painter::updateWidgetRepaintFlags(Widget* const w)
 
     // Repaint parent if its child requests it (e.g geometry change)
     for (auto* child : w->_children) {
+#if DEBUG_PAINTER
         std::cout << __FUNCTION__ << ": widget=" << w->_name << '\n';
+#endif
         w->_needsRepaint |= child->_parentNeedsRepaint;
         child->_parentNeedsRepaint = false;
     }

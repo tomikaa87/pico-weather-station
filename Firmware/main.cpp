@@ -31,7 +31,7 @@
 #define ENABLE_DRAW_TEST 0
 #define ENABLE_DIAG_SCREEN 1
 
-#define TEST_EERAM_PROGRAM_DATA 1
+#define TEST_EERAM_PROGRAM_DATA 0
 
 class DiagScreen;
 
@@ -196,7 +196,7 @@ public:
             return;
         }
 
-        printf("updateRtcData: GetDateTime succeeded");
+        printf("updateRtcData: GetDateTime succeeded\r\n");
 
         static const char* Weekdays[] = {
             "Monday",
@@ -516,7 +516,7 @@ int8_t stream_sensor_data_forced_mode(struct bme280_dev *dev)
     req_delay = bme280_cal_meas_delay(&dev->settings);
 
     /* Continuously stream sensor data */
-    while (1)
+    do
     {
         /* Set the sensor to forced mode */
         rslt = bme280_set_sensor_mode(BME280_FORCED_MODE, dev);
@@ -527,7 +527,7 @@ int8_t stream_sensor_data_forced_mode(struct bme280_dev *dev)
         }
 
         /* Wait for the measurement to complete and print data */
-        dev->delay_us(req_delay, dev->intf_ptr);
+        busy_wait_ms(req_delay);
         rslt = bme280_get_sensor_data(BME280_ALL, &comp_data, dev);
         if (rslt != BME280_OK)
         {
@@ -538,31 +538,32 @@ int8_t stream_sensor_data_forced_mode(struct bme280_dev *dev)
         // print_sensor_data(&comp_data);
 
         diagScreen->updateBme280Data(comp_data);
-
-        break;
-    }
+    } while (false);
 
     return rslt;
 }
 
 TouchPanelControllerData readTouchPanelController()
 {
+    const auto spiBaudrate = spi_get_baudrate(spi1);
+    spi_set_baudrate(spi1, 1'000'000);
+
     auto readAdc = [](const uint8_t ctrl) -> int16_t {
         gpio_put(Pins::Touch::CS, false);
 
         spi_write_blocking(spi1, &ctrl, 1);
 
         // FIXME figure out the BUSY signal
-        busy_wait_us(10);
+        // busy_wait_us(10);
 
-        // auto count = 0;
-        // while (digitalRead(Pins::Touch::BUSY) == HIGH && count < 1000) {
-        //     delayMicroseconds(1);
+        // auto count = 0u;
+        // while (gpio_get(Pins::Touch::BUSY) && count < 10000u) {
+        //     busy_wait_us(1);
         //     ++count;
         // }
 
         // if (count >= 500) {
-        //     return -1;
+        //     printf("%s: busy wait timed out\r\n", __FUNCTION__);
         // }
         
         uint8_t data[2] = { 0 };
@@ -584,24 +585,31 @@ TouchPanelControllerData readTouchPanelController()
     //      S A2 A1 A0 MODE SFR/nDFR PD1 PD0
     // B1 = 1  0  1  1    0        0   0   1
 
-    return TouchPanelControllerData{
+    // Dummy read to turn off the internal reference
+    readAdc(0b10110001);
+
+    TouchPanelControllerData data{
         .raw = TouchPanelControllerData::Raw{
-            .z1 =   readAdc(0b10110011),
-            .z2 =   readAdc(0b11000011),
-            .x =    readAdc(0b11010011),
-            .y =    readAdc(0b10010011),
+            .z1 =   readAdc(0b10110001),
+            .z2 =   readAdc(0b11000001),
+            .x =    readAdc(0b11010001),
+            .y =    readAdc(0b10010001),
             .temp = readAdc(0b10000111)
         }
     };
+
+    spi_set_baudrate(spi1, spiBaudrate);
+
+    return data;
 }
 
 int main()
 {
     stdio_init_all();
 
-    sleep_ms(3000);
+    busy_wait_ms(3000);
 
-    printf("Initializing...");
+    printf("Initializing...\r\n");
 
     display = std::make_unique<Display>();
     display->clear();
@@ -625,12 +633,12 @@ int main()
     weatherStation->setClockDate(23, "Wed");
 #endif
 
-    spi_init(spi1, 4'000'000);
-    spi_set_format(spi1, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
-
     gpio_set_function(Pins::SPIPeri::TX, GPIO_FUNC_SPI);
     gpio_set_function(Pins::SPIPeri::SCK, GPIO_FUNC_SPI);
     gpio_set_function(Pins::SPIPeri::RX, GPIO_FUNC_SPI);
+
+    spi_init(spi1, 4'000'000);
+    spi_set_format(spi1, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
 
     // i2c->begin();
     i2c = std::make_unique<Hardware::I2cDevice>(20, 21);
@@ -675,7 +683,7 @@ int main()
     };
 
 #if TEST_EERAM_PROGRAM_DATA
-    printf("Programming EERAM test data");
+    printf("Programming EERAM test data\r\n");
     if (
         !EERAM_47xxx_WriteBuffer(
             &eeram,
@@ -684,18 +692,30 @@ int main()
             4
         )
     ) {
-        printf("Failed to program EERAM test data");
+        printf("Failed to program EERAM test data\r\n");
     }
 
-    printf("Setting EERAM ASE flag");
+    printf("Setting EERAM ASE flag\r\n");
     if (!EERAM_47xxx_SetASE(&eeram, true)) {
-        printf("Failed to set EERAM ASE flag");
+        printf("Failed to set EERAM ASE flag\r\n");
     }
 #endif
 
+    // Touch controller pins
+    gpio_init(Pins::Touch::CS);
+    gpio_set_dir(Pins::Touch::CS, true);
+    gpio_put(Pins::Touch::CS, true);
+    gpio_init(Pins::Touch::PENIRQ);
+    gpio_set_dir(Pins::Touch::PENIRQ, false);
+    gpio_init(Pins::Touch::BUSY);
+    gpio_set_dir(Pins::Touch::BUSY, false);
+    gpio_set_pulls(Pins::Touch::BUSY, false, true);
+
     gpio_init(Pins::NRF24::CE);
+    gpio_set_dir(Pins::NRF24::CE, true);
     gpio_put(Pins::NRF24::CE, true);
     gpio_init(Pins::NRF24::CSN);
+    gpio_set_dir(Pins::NRF24::CSN, true);
     gpio_put(Pins::NRF24::CSN, true);
     gpio_init(Pins::NRF24::IRQ);
     gpio_set_dir(Pins::NRF24::IRQ, false);
@@ -712,9 +732,10 @@ int main()
             gpio_put(Pins::NRF24::CSN, state == NRF24_HIGH ? true : false);
         },
         // spi_exchange
-        [] (uint8_t data) {
-            spi_write_read_blocking(spi1, &data, &data, 1);
-            return data;
+        [] (const uint8_t data) {
+            uint8_t received = 0;
+            spi_write_read_blocking(spi1, &data, &received, 1);
+            return received;
         }
     );
 
@@ -743,16 +764,21 @@ int main()
         const uint32_t len,
         [[maybe_unused]] void* const intf_ptr
     ) -> BME280_INTF_RET_TYPE {
-        // i2c->beginTransmission(BME280_I2C_ADDR_PRIM);
-        // i2c->write(reg_addr);
-        // i2c->endTransmission();
-        // const auto readLength = i2c->requestFrom(BME280_I2C_ADDR_PRIM, len);
-        // i2c->readBytes(reg_data, readLength);
-        i2c->startTransmission(BME280_I2C_ADDR_PRIM);
-        i2c->write(&reg_addr, 1);
-        i2c->startTransmission(BME280_I2C_ADDR_PRIM);
-        i2c->read(reg_data, len);
-        i2c->endTransmission();
+        if (!i2c->startTransmission(BME280_I2C_ADDR_PRIM)) {
+            printf("bme.read: start failed\r\n");
+        }
+        if (!i2c->write(&reg_addr, 1)) {
+            printf("bme.read: write failed\r\n");
+        }
+        if (!i2c->startTransmission(BME280_I2C_ADDR_PRIM)) {
+            printf("bme.read: restart failed\r\n");
+        }
+        if (!i2c->read(reg_data, len)) {
+            printf("bme.read: read failed\r\n");
+        }
+        if (!i2c->endTransmission()) {
+            printf("bme.read: end failed\r\n");
+        }
         return BME280_INTF_RET_SUCCESS;
     };
     bme.write = [](
@@ -761,33 +787,27 @@ int main()
         const uint32_t len,
         [[maybe_unused]] void* const intf_ptr
     ) -> BME280_INTF_RET_TYPE {
-        // i2c->beginTransmission(BME280_I2C_ADDR_PRIM);
-        // i2c->write(reg_addr);
-        // i2c->write(reg_data, len);
-        // i2c->endTransmission();
-        i2c->startTransmission(BME280_I2C_ADDR_PRIM);
-        i2c->write(&reg_addr, 1);
-        i2c->write(reg_data, len);
-        i2c->endTransmission();
+        if (!i2c->startTransmission(BME280_I2C_ADDR_PRIM)) {
+            printf("bme.write: start failed\r\n");
+        }
+        if (!i2c->write(&reg_addr, 1)) {
+            printf("bme.write: write reg addr failed\r\n");
+        }
+        if (!i2c->write(reg_data, len)) {
+            printf("bme.write: write data failed\r\n");
+        }
+        if (!i2c->endTransmission()) {
+            printf("bme.read: end failed\r\n");
+        }
         return BME280_INTF_RET_SUCCESS;
     };
     bme.delay_us = [](
         const uint32_t period,
         [[maybe_unused]] void* const intf_ptr
     ) {
-        sleep_ms(period);
+        busy_wait_us(period);
     };
     bmeInitResult = bme280_init(&bme);
-
-    // Touch controller pins
-    gpio_init(Pins::Touch::CS);
-    gpio_set_dir(Pins::Touch::CS, true);
-    gpio_put(Pins::Touch::CS, true);
-    gpio_init(Pins::Touch::PENIRQ);
-    gpio_set_dir(Pins::Touch::PENIRQ, false);
-    gpio_init(Pins::Touch::BUSY);
-    gpio_set_dir(Pins::Touch::BUSY, false);
-    gpio_set_pulls(Pins::Touch::BUSY, false, true);
 
     diagScreen = std::make_unique<DiagScreen>();
 
@@ -798,7 +818,7 @@ int main()
             22, 10, 20, 3, 22, 46, 00, false, false
         )
     ) {
-        printf(PSTR("RTC SetDateTime failed"));
+        printf(PSTR("RTC SetDateTime failed\r\n"));
     }
 #endif
 
@@ -808,7 +828,7 @@ int main()
             false
         )
     ) {
-        printf("RTC SetExternalOscillatorDisabled failed");
+        printf("RTC SetExternalOscillatorDisabled failed\r\n");
     }
 
     if (
@@ -817,10 +837,10 @@ int main()
             true
         )
     ) {
-        printf("RTC SetBatteryBackupEnabled failed");
+        printf("RTC SetBatteryBackupEnabled failed\r\n");
     }
 
-    printf("Initialization finished");
+    printf("Initialization finished\r\n");
 
     while (true) {
 #if ENABLE_DIAG_SCREEN
@@ -831,7 +851,7 @@ int main()
         if (millis - updateMillis >= 1000) {
             updateMillis = millis;
 
-            printf("Painting diagnostics screen");
+            printf("Painting diagnostics screen\r\n");
 
             stream_sensor_data_forced_mode(&bme);
             diagScreen->updateNrf24Data();
@@ -846,7 +866,7 @@ int main()
 
 #if ENABLE_DRAW_TEST
         printf("BME280 init result: %d\r\n", bmeInitResult);
-        printf("Running display test");
+        printf("Running display test\r\n");
 
         display->clear();
 
@@ -871,7 +891,7 @@ int main()
             digitalWrite(LED_BUILTIN, updateLedOn ? HIGH : LOW);
             updateLedOn = !updateLedOn;
 
-            printf(fmt::format("{}: update", __func__).c_str());
+            printf(fmt::format("{}: update\r\n", __func__).c_str());
 
             weatherStation->setCurrentTemperature(temperature);
             weatherStation->setCurrentSensorTemperature(temperature);
