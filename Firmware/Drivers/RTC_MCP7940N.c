@@ -189,6 +189,19 @@ bool RTC_MCP7940N_SetDateTime(
     const bool pm
 )
 {
+    // Sanity check
+    if (
+        year > 99
+        || month < 1 || month > 12
+        || date < 1 || date > 31
+        || weekday < 1 || weekday > 7
+        || hour > 23
+        || minute > 59
+        || second > 59
+    ) {
+        return false;
+    }
+
     // Stop the oscillator before setting the time
 
     uint8_t rtcsec = 0;
@@ -327,26 +340,31 @@ bool RTC_MCP7940N_GetDateTime(
         return false;
     } 
 
+    // RTCSEC
     *second = ((regs[0] & (0b111 << 4)) >> 4) * 10 + (regs[0] & 0b1111);
     
+    // RTCMIN
     *minute = ((regs[1] & (0b111 << 4)) >> 4) * 10 + (regs[1] & 0b1111);
     
+    // RTCHOUR
     *mode12h = (regs[2] & (1 << 6)) > 0;
-    
     *pm = *mode12h ? (regs[2] & (1 << 5)) > 0 : false;
-    
     *hour = (regs[2] & 0b1111) + (
         *mode12h
             ? ((regs[2] & (1 << 4)) >> 4) * 10
             : ((regs[2] & (0b11 << 4)) >> 4) * 10
     );
 
+    // RTCWKDAY
     *weekday = regs[3] & 0b111;
 
+    // RTCDATE
     *date = ((regs[4] & (0b11 << 4)) >> 4) * 10 + (regs[4] & 0b1111);
 
+    // RTCMTH
     *month = ((regs[5] & (1 << 4)) >> 4) * 10 + (regs[5] & 0b1111);
 
+    // RTCYEAR
     *year = ((regs[6] & (0b1111 << 4)) >> 4) * 10 + (regs[6] & 0b1111);
 
     return true;
@@ -391,6 +409,18 @@ bool RTC_MCP7940N_SetAlarm(
 )
 {
     if (alarm > RTC_MCP7940N_ALARM_1) {
+        return false;
+    }
+
+    // Sanity check
+    if (
+        month < 1 || month > 12
+        || date < 1 || date > 31
+        || weekday < 1 || weekday > 7
+        || hour > 23
+        || minute > 59
+        || second > 59
+    ) {
         return false;
     }
 
@@ -754,23 +784,24 @@ bool RTC_MCP7940N_GetPowerFailTimeStamp(
         return false;
     }
 
+    // PWRxxMIN
     *minute = ((regs[0] & (0b111 << 4)) >> 4) * 10 + (regs[0] & 0b1111);
 
+    // PWRxxHOUR
     *mode12h = (regs[1] & (1 << 6)) > 0;
-
     *pm = *mode12h ? (regs[1] & (1 << 5)) > 0 : false;
-
     *hour = (regs[1] & 0b1111) + (
         *mode12h
             ? ((regs[1] & (1 << 4)) >> 4) * 10
             : ((regs[1] & (0b11 << 4)) >> 4) * 10
     );
 
+    // PWRxxDATE
     *date = ((regs[2] & (0b11 << 4)) >> 4) * 10 + (regs[2] & 0b1111);
 
+    // PWRxxMTH
     *weekday = (regs[3] & (0b111 << 5)) >> 5;
-
-    *month = ((regs[4] & (1 << 4)) >> 4) * 10 + (regs[4] & 0b1111);
+    *month = ((regs[3] & (1 << 4)) >> 4) * 10 + (regs[3] & 0b1111);
 
     return true;
 }
