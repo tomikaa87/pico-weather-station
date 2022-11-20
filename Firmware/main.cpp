@@ -21,6 +21,7 @@
 
 #include "Hardware/EnvironmentSensor.h"
 #include "Hardware/I2cDevice.h"
+#include "Hardware/Keypad.h"
 #include "Hardware/RadioReceiver.h"
 #include "Hardware/RealTimeClock.h"
 
@@ -522,7 +523,7 @@ int main()
 
     display = std::make_unique<Display>();
     display->clear();
-    display->setBacklightLevel(10);
+    display->setBacklightLevel(60);
 
     weatherStation = std::make_unique<Screens::WeatherStation>(display.get());
 
@@ -666,6 +667,8 @@ int main()
     };
 
     uint32_t weatherScreenUpdateTimestamp = 0;
+    uint32_t keypadReadTimestamp = 0;
+    int displayBrightness = 60;
 
     weatherStation->setCurrentTemperature(0);
     weatherStation->setCurrentSensorTemperature(0);
@@ -675,6 +678,8 @@ int main()
     weatherStation->setCurrentHumidity(0);
     weatherStation->setCurrentWindSpeed(0);
     weatherStation->setCurrentWindGustSpeed(0);
+
+    Hardware::Keypad keypad;
 
     while (true) {
         for (auto& task : tasks) {
@@ -722,6 +727,62 @@ int main()
         nrf24_dump_registers(&nrf);
         // stream_sensor_data_forced_mode(&bme);
 #endif
+
+        // if (millis - keypadReadTimestamp >= 100) {
+        //     keypadReadTimestamp = millis;
+        {
+            static const auto keyName = [](const Hardware::Keypad::Key k) {
+                switch (k) {
+                    case Hardware::Keypad::Key::None:
+                        return "None";
+                    case Hardware::Keypad::Key::Key0:
+                        return "Key0";
+                    case Hardware::Keypad::Key::Key1:
+                        return "Key1";
+                    case Hardware::Keypad::Key::Key2:
+                        return "Key2";
+                    case Hardware::Keypad::Key::Key3:
+                        return "Key3";
+                    case Hardware::Keypad::Key::Key4:
+                        return "Key4";
+                    case Hardware::Keypad::Key::Key5:
+                        return "Key5";
+                }
+                return "Unknown";
+            };
+
+            static const auto pressType = [](const Hardware::Keypad::Press p) {
+                switch (p) {
+                    case Hardware::Keypad::Press::None:
+                        return "None";
+                    case Hardware::Keypad::Press::Short:
+                        return "Short";
+                    case Hardware::Keypad::Press::Long:
+                        return "Long";
+                }
+                return "Unknown";
+            };
+
+            auto state = keypad.task(millis);
+            if (state.first != Hardware::Keypad::Key::None) {
+                printf("Keypad pressed: %s - %s\n", keyName(state.first), pressType(state.second));
+            }
+
+            // Test code to adjust the display's brightness
+            bool changed = false;
+            if (displayBrightness < 255 && state.first == Hardware::Keypad::Key::Key0) {
+                ++displayBrightness;
+                changed = true;
+            } else if (displayBrightness > 0 && state.first == Hardware::Keypad::Key::Key1) {
+                --displayBrightness;
+                changed = true;
+            }
+
+            if (changed) {
+                display->setBacklightLevel(displayBrightness);
+                printf("Display brightness changed to %d\n", displayBrightness);
+            }
+        }
 
 #if 1
         if (millis - weatherScreenUpdateTimestamp >= 5000 || weatherScreenUpdateTimestamp == 0) {

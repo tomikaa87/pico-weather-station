@@ -69,6 +69,8 @@ add_executable(PicoWeatherStationFirmware
     Hardware/EnvironmentSensor.h
     Hardware/I2cDevice.cpp
     Hardware/I2cDevice.h
+    Hardware/Keypad.cpp
+    Hardware/Keypad.h
     Hardware/RadioReceiver.cpp
     Hardware/RadioReceiver.h
     Hardware/RealTimeClock.cpp
