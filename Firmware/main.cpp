@@ -18,8 +18,10 @@
 #include <fmt/core.h>
 
 #include "Drivers/nrf24.h"
+
 #include "Hardware/EnvironmentSensor.h"
 #include "Hardware/I2cDevice.h"
+#include "Hardware/RadioReceiver.h"
 #include "Hardware/RealTimeClock.h"
 
 #include <hardware/gpio.h>
@@ -55,6 +57,7 @@ namespace
     std::unique_ptr<Hardware::I2cDevice> i2c;
     std::unique_ptr<Hardware::RealTimeClock> rtc;
     std::unique_ptr<Hardware::EnvironmentSensor> envSens;
+    std::unique_ptr<Hardware::RadioReceiver> radioReceiver;
     EERAM_47xxx_Device eeram;
     nrf24_t nrf;
     std::unique_ptr<DiagScreen> diagScreen;
@@ -538,43 +541,6 @@ int main()
     rtc = std::make_unique<Hardware::RealTimeClock>(*i2c);
 
     printf("Initializing EERAM\r\n");
-    eeram.a1 = 0;
-    eeram.a2 = 0;
-
-    eeram.i2cFunctionArg = i2c.get();
-
-    eeram.i2cStartTransmission = [](
-        void* const arg,
-        const uint8_t address
-    ) {
-        auto* const i2c = reinterpret_cast<Hardware::I2cDevice*>(arg);
-        return i2c->startTransmission(address);
-    };
-
-    eeram.i2cEndTransmission = [](void* const arg) {
-        auto* const i2c = reinterpret_cast<Hardware::I2cDevice*>(arg);
-        return i2c->endTransmission();
-    };
-
-    eeram.i2cRead = [](
-        void* const arg,
-        uint8_t* const data,
-        const size_t length,
-        const bool noStop
-    ) {
-        auto* const i2c = reinterpret_cast<Hardware::I2cDevice*>(arg);
-        return i2c->read(data, length, noStop);
-    };
-
-    eeram.i2cWrite = [](
-        void* const arg,
-        const uint8_t* const data,
-        const size_t length,
-        const bool noStop
-    ) {
-        auto* const i2c = reinterpret_cast<Hardware::I2cDevice*>(arg);
-        return i2c->write(data, length, noStop);
-    };
 
 #if TEST_EERAM_PROGRAM_DATA
     printf("Programming EERAM test data\r\n");
@@ -663,7 +629,7 @@ int main()
     if (!
         RTC_MCP7940N_SetDateTime(
             rtc->device(),
-            22, 10, 30, 6, 21, 50, 00, false, false
+            22, 10, 31, 1, 10, 51, 00, false, false
         )
     ) {
         printf("RTC SetDateTime failed\r\n");
@@ -688,10 +654,15 @@ int main()
         printf("RTC SetBatteryBackupEnabled failed\r\n");
     }
 
+    printf("Initializing RadioReceiver\r\n");
+
+    radioReceiver = std::make_unique<Hardware::RadioReceiver>();
+
     printf("Initialization finished\r\n");
 
-    const auto tasks = std::array<std::reference_wrapper<ITask>, 1>{
-        *envSens
+    const auto tasks = std::array<std::reference_wrapper<ITask>, 2>{
+        *envSens,
+        *radioReceiver
     };
 
     uint32_t weatherScreenUpdateTimestamp = 0;
@@ -753,7 +724,7 @@ int main()
 #endif
 
 #if 1
-        if (millis - weatherScreenUpdateTimestamp >= 5000) {
+        if (millis - weatherScreenUpdateTimestamp >= 5000 || weatherScreenUpdateTimestamp == 0) {
             weatherScreenUpdateTimestamp = millis;
 
             weatherStation->setCurrentPressure(envSens->pressurePa() * 0.01);
@@ -772,12 +743,17 @@ int main()
                 printf("RTC GetDateTime failed\r\n");
             }
 
+            printf(
+                "RTC: %u 20%02u-%02u-%02u %02u:%02u:%02u\r\n",
+                wd, y, mo, d, h, m, s
+            );
+
             static constexpr const char* Weekdays[7] = {
                 "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"
             };
 
             weatherStation->setClockTime(h, m);
-            weatherStation->setClockDate(d, Weekdays[wd]);
+            weatherStation->setClockDate(d, Weekdays[wd - 1]);
 
             painter->paintWidget(weatherStation.get());
         }

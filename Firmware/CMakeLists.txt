@@ -62,11 +62,15 @@ add_executable(PicoWeatherStationFirmware
     Icons.cpp
     Icons.h
     main.cpp
+    Settings.cpp
+    Settings.h
 
     Hardware/EnvironmentSensor.cpp
     Hardware/EnvironmentSensor.h
     Hardware/I2cDevice.cpp
     Hardware/I2cDevice.h
+    Hardware/RadioReceiver.cpp
+    Hardware/RadioReceiver.h
     Hardware/RealTimeClock.cpp
     Hardware/RealTimeClock.h
 
@@ -116,10 +120,15 @@ target_link_libraries(PicoWeatherStationFirmware
     pico_stdlib
     hardware_gpio
     hardware_i2c
+    hardware_pio
     hardware_pwm
     hardware_spi
     fmt
     u8g2
+)
+
+pico_generate_pio_header(PicoWeatherStationFirmware
+    ${CMAKE_CURRENT_LIST_DIR}/Hardware/UartRx.pio
 )
 
 pico_add_extra_outputs(PicoWeatherStationFirmware)

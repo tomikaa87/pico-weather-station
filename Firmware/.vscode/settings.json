@@ -5,6 +5,10 @@
         "memory": "cpp",
         "u8g2.h": "c",
         "*.tcc": "cpp",
-        "chrono": "cpp"
+        "chrono": "cpp",
+        "random": "cpp",
+        "limits": "cpp",
+        "valarray": "cpp",
+        "utility": "cpp"
     }
 }
