@@ -115,7 +115,7 @@ public:
         return Point{ -p._x, -p._y };
     }
 
-    [[nodiscard]] friend std::ostream& operator<<(std::ostream& os, const Point& p);
+    friend std::ostream& operator<<(std::ostream& os, const Point& p);
 
 private:
     int _x = 0;

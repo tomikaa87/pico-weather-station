@@ -667,7 +667,7 @@ int main()
     };
 
     uint32_t weatherScreenUpdateTimestamp = 0;
-    uint32_t keypadReadTimestamp = 0;
+    // uint32_t keypadReadTimestamp = 0;
     int displayBrightness = 60;
 
     weatherStation->setCurrentTemperature(0);

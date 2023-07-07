@@ -133,7 +133,7 @@ bool Hardware::RadioReceiver::processPacketData()
                 crc16 <<= 1;
             } else {
                 crc16 <<= 1;
-                crc16 ^= 0x1021;
+                crc16 ^= Polynomial;
             }
         }
     }
