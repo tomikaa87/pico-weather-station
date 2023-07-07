@@ -893,7 +893,7 @@ err_t tcpConnected(void* arg, struct tcp_pcb* tpcb, const err_t err)
 
     // auto* ns = reinterpret_cast<NetworkState*>(arg);
 
-    static const char Payload[] = "GET / HTTP/1.1\r\nHost: example.com\r\nAccept: */*\r\n\r\n";
+    static const char Payload[] = "GET /data/2.5/weather?appid=" OPEN_WEATHER_API_KEY "&lat=" OPEN_WEATHER_LAT "&lon=" OPEN_WEATHER_LON " HTTP/1.1\r\nHost: api.openweathermap.org\r\nAccept: application/json\r\n\r\n";
 
     return tcp_write(tpcb, Payload, sizeof(Payload) - 1, 0);
 }
@@ -913,8 +913,8 @@ void runNetworkStateMachine()
         }
 
         case NetworkState::State::ReadyToConnect: {
-            // example.com
-            ip4addr_aton("93.184.216.34", &netState.remoteAddr);
+            // api.openweathermap.org
+            ip4addr_aton("37.139.20.5", &netState.remoteAddr);
 
             netState.tcpPcb = tcp_new_ip_type(IP_GET_TYPE(&netState.remoteAddr));
             if (!netState.tcpPcb) {

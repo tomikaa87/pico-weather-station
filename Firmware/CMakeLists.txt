@@ -143,6 +143,9 @@ target_compile_definitions(PicoWeatherStationFirmware
         -DCYW43_HOST_NAME="Pico Weather Station"
         -DWIFI_SSID="$ENV{PICO_WIFI_SSID}"
         -DWIFI_PASS="$ENV{PICO_WIFI_PASS}"
+        -DOPEN_WEATHER_API_KEY="$ENV{OPEN_WEATHER_API_KEY}"
+        -DOPEN_WEATHER_LAT="$ENV{OPEN_WEATHER_LAT}"
+        -DOPEN_WEATHER_LON="$ENV{OPEN_WEATHER_LON}"
 )
 
 pico_generate_pio_header(PicoWeatherStationFirmware
