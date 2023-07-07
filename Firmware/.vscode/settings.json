@@ -9,6 +9,7 @@
         "random": "cpp",
         "limits": "cpp",
         "valarray": "cpp",
-        "utility": "cpp"
+        "utility": "cpp",
+        "unique_id.h": "c"
     }
 }

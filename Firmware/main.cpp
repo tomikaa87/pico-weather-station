@@ -33,6 +33,9 @@
 #include <pico/multicore.h>
 #include <pico/stdio.h>
 
+#include <lwip/pbuf.h>
+#include <lwip/tcp.h>
+
 #include "Drivers/EERAM_47xxx.h"
 
 #define ENABLE_DRAW_TEST 0
@@ -825,6 +828,131 @@ void core1_main()
     }
 }
 
+struct NetworkState
+{
+    enum class State
+    {
+        Idle,
+        ReadyToConnect,
+        Connecting,
+        ConnectFailed,
+        Error
+    } state{ State::Idle };
+
+    uint32_t lastConnectMillis{ 0 };
+    struct tcp_pcb *tcpPcb{ nullptr };
+    ip_addr_t remoteAddr{};
+} netState;
+
+err_t tcpPoll(void* arg, struct tcp_pcb* tpcb)
+{
+    printf("%s\n", __func__);
+    return 0;
+}
+
+err_t tcpSent(void* arg, struct tcp_pcb* tpcb, const u16_t len)
+{
+    printf("%s\n", __func__);
+    return 0;
+}
+
+err_t tcpRecv(void* arg, struct tcp_pcb* tpcb, struct pbuf* p, const err_t err)
+{
+    if (!p) {
+        printf("NET: recv buffer is null\n");
+        return 0;
+    }
+
+    cyw43_arch_lwip_check();
+
+    printf("%s\n", __func__);
+
+    printf("NET: recv=");
+    if (p->tot_len > 0) {
+        for (auto* buf = p; buf != nullptr; buf = buf->next) {
+            for (auto i = 0; i < buf->len; ++i) {
+                printf("%c", reinterpret_cast<uint8_t*>(buf->payload)[i]);
+            }
+        }
+        tcp_recved(tpcb, p->tot_len);
+    }
+    printf("\n");
+    pbuf_free(p);
+
+    return 0;
+}
+
+void tcpErr(void* arg, const err_t err)
+{
+    printf("%s\n", __func__);
+}
+
+err_t tcpConnected(void* arg, struct tcp_pcb* tpcb, const err_t err)
+{
+    printf("%s\n", __func__);
+
+    // auto* ns = reinterpret_cast<NetworkState*>(arg);
+
+    static const char Payload[] = "GET / HTTP/1.1\r\nHost: example.com\r\nAccept: */*\r\n\r\n";
+
+    return tcp_write(tpcb, Payload, sizeof(Payload) - 1, 0);
+}
+
+void runNetworkStateMachine()
+{
+    const auto millis = to_ms_since_boot(get_absolute_time());
+
+    switch (netState.state) {
+        case NetworkState::State::Idle: {
+            if (netState.lastConnectMillis == 0 || millis - netState.lastConnectMillis > 5000) {
+                netState.lastConnectMillis = millis;
+                netState.state = NetworkState::State::ReadyToConnect;
+            }
+
+            break;
+        }
+
+        case NetworkState::State::ReadyToConnect: {
+            // example.com
+            ip4addr_aton("93.184.216.34", &netState.remoteAddr);
+
+            netState.tcpPcb = tcp_new_ip_type(IP_GET_TYPE(&netState.remoteAddr));
+            if (!netState.tcpPcb) {
+                printf("NET: failed to create PCB");
+                netState.state = NetworkState::State::Error;
+                break;
+            }
+
+            tcp_arg(netState.tcpPcb, &netState);
+            tcp_poll(netState.tcpPcb, tcpPoll, 5 /*s*/ * 2);
+            tcp_sent(netState.tcpPcb, tcpSent);
+            tcp_recv(netState.tcpPcb, tcpRecv);
+            tcp_err(netState.tcpPcb, tcpErr);
+
+            cyw43_arch_lwip_begin();
+            const auto err = tcp_connect(netState.tcpPcb, &netState.remoteAddr, 80, tcpConnected);
+            cyw43_arch_lwip_end();
+
+            netState.lastConnectMillis = millis;
+
+            if (err == 0) {
+                netState.state = NetworkState::State::Connecting;
+            } else {
+                netState.state = NetworkState::State::ConnectFailed;
+            }
+
+            break;
+        }
+
+        case NetworkState::State::ConnectFailed: {
+            printf("NET: connect failed\n");
+            netState.lastConnectMillis = millis;
+            netState.state = NetworkState::State::Idle;
+            break;
+        }
+    }
+}
+
 int main()
 {
     stdio_init_all();
@@ -842,7 +970,7 @@ int main()
 
     while (true) {
         if (cyw43_wifi_link_status(&cyw43_state, CYW43_ITF_STA) == CYW43_LINK_JOIN) {
-            tight_loop_contents();
+            runNetworkStateMachine();
             continue;
         }
 

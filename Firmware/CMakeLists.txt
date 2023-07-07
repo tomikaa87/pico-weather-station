@@ -140,6 +140,7 @@ target_link_libraries(PicoWeatherStationFirmware
 
 target_compile_definitions(PicoWeatherStationFirmware
     PRIVATE
+        -DCYW43_HOST_NAME="Pico Weather Station"
         -DWIFI_SSID="$ENV{PICO_WIFI_SSID}"
         -DWIFI_PASS="$ENV{PICO_WIFI_PASS}"
 )
