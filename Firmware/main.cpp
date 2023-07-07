@@ -28,6 +28,9 @@
 #include <hardware/gpio.h>
 #include <hardware/i2c.h>
 #include <hardware/spi.h>
+
+#include <pico/cyw43_arch.h>
+#include <pico/multicore.h>
 #include <pico/stdio.h>
 
 #include "Drivers/EERAM_47xxx.h"
@@ -513,11 +516,11 @@ TouchPanelControllerData readTouchPanelController()
     return {};
 }
 
-int main()
+void core1_main()
 {
-    stdio_init_all();
+    // stdio_init_all();
 
-    busy_wait_ms(3000);
+    // busy_wait_ms(3000);
 
     printf("Initializing...\r\n");
 
@@ -820,4 +823,37 @@ int main()
         }
 #endif
     }
+}
+
+int main()
+{
+    stdio_init_all();
+
+    busy_wait_ms(3000);
+
+    multicore_launch_core1(core1_main);
+
+    if (cyw43_arch_init()) {
+        printf("cyw43_arch_init failed\n");
+        return 1;
+    }
+
+    cyw43_arch_enable_sta_mode();
+
+    while (true) {
+        if (cyw43_wifi_link_status(&cyw43_state, CYW43_ITF_STA) == CYW43_LINK_JOIN) {
+            tight_loop_contents();
+            continue;
+        }
+
+        printf("WiFi: connecting\n");
+
+        if (cyw43_arch_wifi_connect_timeout_ms(WIFI_SSID, WIFI_PASS, CYW43_AUTH_WPA2_AES_PSK, 10000)) {
+            printf("cyw43_arch_wifi_connect_timeout_ms failed\n");
+        }
+    }
+
+    cyw43_arch_deinit();
+
+    return 0;
 }

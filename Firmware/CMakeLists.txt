@@ -11,6 +11,9 @@ if (PICO_SDK_VERSION_STRING VERSION_LESS "1.5.0")
     message(FATAL_ERROR "Raspberry Pi Pico SDK version 1.5.0 (or later) required. Your version is ${PICO_SDK_VERSION_STRING}")
 endif()
 
+# We're working with a Raspberry Pi Pico W
+set(PICO_BOARD pico_w)
+
 # Initialize the SDK
 pico_sdk_init()
 
@@ -115,10 +118,16 @@ add_executable(PicoWeatherStationFirmware
 
 target_include_directories(PicoWeatherStationFirmware
     PRIVATE
+        ${CMAKE_CURRENT_LIST_DIR}
+        ${CMAKE_CURRENT_LIST_DIR}/Network
         3rdparty/json/single_include
 )
 
 target_link_libraries(PicoWeatherStationFirmware
+    pico_cyw43_arch_lwip_threadsafe_background
+    pico_lwip_mbedtls
+    pico_mbedtls
+    pico_multicore
     pico_stdlib
     hardware_gpio
     hardware_i2c
@@ -127,6 +136,12 @@ target_link_libraries(PicoWeatherStationFirmware
     hardware_spi
     fmt
     u8g2
+)
+
+target_compile_definitions(PicoWeatherStationFirmware
+    PRIVATE
+        -DWIFI_SSID="$ENV{PICO_WIFI_SSID}"
+        -DWIFI_PASS="$ENV{PICO_WIFI_PASS}"
 )
 
 pico_generate_pio_header(PicoWeatherStationFirmware
