@@ -4,6 +4,17 @@
 
 #include "Screens/WeatherStation.h"
 
+#include "Hardware/EnvironmentSensor.h"
+#include "Hardware/I2cDevice.h"
+#include "Hardware/Keypad.h"
+#include "Hardware/RadioReceiver.h"
+#include "Hardware/RealTimeClock.h"
+
+#include "Network/NetworkController.h"
+#include "Network/WiFiController.h"
+
+#include "Network/TcpSocket.h"
+
 #include "Widgets/Display.h"
 #include "Widgets/Image.h"
 #include "Widgets/Label.h"
@@ -18,12 +29,6 @@
 #include <fmt/core.h>
 
 #include "Drivers/nrf24.h"
-
-#include "Hardware/EnvironmentSensor.h"
-#include "Hardware/I2cDevice.h"
-#include "Hardware/Keypad.h"
-#include "Hardware/RadioReceiver.h"
-#include "Hardware/RealTimeClock.h"
 
 #include <hardware/gpio.h>
 #include <hardware/i2c.h>
@@ -667,7 +672,7 @@ void core1_main()
 
     printf("Initialization finished\r\n");
 
-    const auto tasks = std::array<std::reference_wrapper<ITask>, 2>{
+    const auto tasks = std::array<std::reference_wrapper<IRunnable>, 2>{
         *envSens,
         *radioReceiver
     };
@@ -956,32 +961,51 @@ void runNetworkStateMachine()
 int main()
 {
     stdio_init_all();
-
     busy_wait_ms(3000);
-
     multicore_launch_core1(core1_main);
 
-    if (cyw43_arch_init()) {
-        printf("cyw43_arch_init failed\n");
-        return 1;
-    }
+    Network::NetworkController networkController;
 
-    cyw43_arch_enable_sta_mode();
+    const std::array<std::reference_wrapper<IRunnable>, 1> runnables{
+        networkController
+    };
+
+    Network::TcpSocket tcpSocket{ networkController };
+    tcpSocket.setStateChangedHandler(
+        [](const auto state) {
+            switch (state) {
+                case Network::Socket::State::Disconnected:
+                    puts("Socket Disconnected");
+                    break;
+                case Network::Socket::State::Connecting:
+                    puts("Socket Connecting");
+                    break;
+                case Network::Socket::State::Connected:
+                    puts("Socket Connected");
+                    break;
+                case Network::Socket::State::Disconnecting:
+                    puts("Socket Disconnecting");
+                    break;
+            }
+        }
+    );
+    tcpSocket.setErrorHandler(
+        [] {
+            puts("Socket error");
+        }
+    );
+    tcpSocket.setReceivedHandler(
+        [] {
+            puts("Socket received data");
+        }
+    );
+    tcpSocket.connect("37.139.20.5", 80);
 
     while (true) {
-        if (cyw43_wifi_link_status(&cyw43_state, CYW43_ITF_STA) == CYW43_LINK_JOIN) {
-            runNetworkStateMachine();
-            continue;
-        }
-
-        printf("WiFi: connecting\n");
-
-        if (cyw43_arch_wifi_connect_timeout_ms(WIFI_SSID, WIFI_PASS, CYW43_AUTH_WPA2_AES_PSK, 10000)) {
-            printf("cyw43_arch_wifi_connect_timeout_ms failed\n");
+        for (const auto& runnable : runnables) {
+            runnable.get().run();
         }
     }
-
-    cyw43_arch_deinit();
 
     return 0;
 }

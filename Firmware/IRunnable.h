@@ -1,9 +1,9 @@
 #pragma once
 
-class ITask
+class IRunnable
 {
 public:
-    virtual ~ITask() = default;
+    virtual ~IRunnable() = default;
 
     virtual void run() = 0;
 };

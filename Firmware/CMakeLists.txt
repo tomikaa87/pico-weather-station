@@ -5,7 +5,7 @@ include($ENV{PICO_SDK_PATH}/external/pico_sdk_import.cmake)
 
 project(PicoWeatherStationFirmware C CXX ASM)
 set(CMAKE_C_STANDARD 11)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 if (PICO_SDK_VERSION_STRING VERSION_LESS "1.5.1")
     message(FATAL_ERROR "Raspberry Pi Pico SDK version 1.5.1 (or later) required. Your version is ${PICO_SDK_VERSION_STRING}")
@@ -68,6 +68,17 @@ add_executable(PicoWeatherStationFirmware
     Settings.cpp
     Settings.h
 
+    Drivers/EERAM_47xxx.c
+    Drivers/EERAM_47xxx.h
+    Drivers/RTC_MCP7940N.c
+    Drivers/RTC_MCP7940N.h
+    Drivers/bme280_defs.h
+    Drivers/bme280.c
+    Drivers/bme280.h
+    Drivers/nrf24.c
+    Drivers/nrf24.h
+    Drivers/u8x8_d_st7586s_erc240160_chunked.c
+
     Hardware/EnvironmentSensor.cpp
     Hardware/EnvironmentSensor.h
     Hardware/I2cDevice.cpp
@@ -79,16 +90,12 @@ add_executable(PicoWeatherStationFirmware
     Hardware/RealTimeClock.cpp
     Hardware/RealTimeClock.h
 
-    Drivers/EERAM_47xxx.c
-    Drivers/EERAM_47xxx.h
-    Drivers/RTC_MCP7940N.c
-    Drivers/RTC_MCP7940N.h
-    Drivers/bme280_defs.h
-    Drivers/bme280.c
-    Drivers/bme280.h
-    Drivers/nrf24.c
-    Drivers/nrf24.h
-    Drivers/u8x8_d_st7586s_erc240160_chunked.c
+    Network/NetworkController.cpp
+    Network/NetworkController.h
+    Network/TcpSocket.cpp
+    Network/TcpSocket.h
+    Network/WiFiController.cpp
+    Network/WiFiController.h
 
     Screens/WeatherStation.cpp
     Screens/WeatherStation.h

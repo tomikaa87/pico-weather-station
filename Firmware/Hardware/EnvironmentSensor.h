@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../ITask.h"
+#include "../IRunnable.h"
 
 #include "../Drivers/bme280.h"
 
@@ -10,7 +10,7 @@ namespace Hardware
 {
     class I2cDevice;
 
-    class EnvironmentSensor : public ITask
+    class EnvironmentSensor : public IRunnable
     {
     public:
         EnvironmentSensor(I2cDevice& i2c);
