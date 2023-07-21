@@ -64,7 +64,9 @@ add_executable(PicoWeatherStationFirmware
     Graphics.h
     Icons.cpp
     Icons.h
+    IoDevice.h
     main.cpp
+    Runnable.h
     Settings.cpp
     Settings.h
 
@@ -92,6 +94,8 @@ add_executable(PicoWeatherStationFirmware
 
     Network/NetworkController.cpp
     Network/NetworkController.h
+    Network/Socket.cpp
+    Network/Socket.h
     Network/TcpSocket.cpp
     Network/TcpSocket.h
     Network/WiFiController.cpp

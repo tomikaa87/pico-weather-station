@@ -1,6 +1,8 @@
 #pragma once
 
-#include "../IRunnable.h"
+#include "Socket.h"
+
+#include "Utils/CallOnce.h"
 
 #include <cstdint>
 #include <functional>
@@ -13,83 +15,6 @@ namespace Network
 {
 
 class NetworkController;
-
-class IODevice
-{
-public:
-    virtual ~IODevice() = default;
-
-    virtual void read() = 0;
-    virtual void write() = 0;
-};
-
-template <typename Func>
-class CallOnce
-{
-public:
-    CallOnce() = default;
-
-    explicit CallOnce(Func&& func)
-        : _func{ std::move(func) }
-    {}
-
-    void callIfSignaled()
-    {
-        if (_funcWrapper) {
-            decltype(_funcWrapper) funcWrapper;
-            std::swap(funcWrapper, _funcWrapper);
-            funcWrapper();
-        }
-    }
-
-    template <typename... Args>
-    void signal(Args... args)
-    {
-        if (_func) {
-            _funcWrapper = [...args{ std::forward<Args>(args) }, this]() mutable {
-                _func(std::forward<Args>(args)...);
-            };
-        }
-    }
-
-private:
-    Func _func;
-    std::function<void ()> _funcWrapper;
-    bool _call{ false };
-};
-
-class Socket : public IODevice, public IRunnable
-{
-public:
-    explicit Socket(NetworkController& controller);
-    ~Socket() override;
-
-    virtual bool connect(const char* host, uint16_t port) = 0;
-
-    enum class State
-    {
-        Disconnected,
-        Connecting,
-        Connected,
-        Disconnecting
-    };
-
-    using StateChangedHandler = std::function<void (State)>;
-    using ReceivedHandler = std::function<void()>;
-    using ErrorHandler = std::function<void ()>;
-
-    void setStateChangedHandler(StateChangedHandler&& handler);
-    void setReceivedHandler(ReceivedHandler&& handler);
-    void setErrorHandler(ErrorHandler&& handler);
-
-    void run() override;
-
-protected:
-    NetworkController& _controller;
-    CallOnce<StateChangedHandler> _stateChangedHandler;
-    CallOnce<ReceivedHandler> _receivedHandler;
-    CallOnce<ErrorHandler> _errorHandler;
-};
 
 class TcpSocket : public Socket
 {

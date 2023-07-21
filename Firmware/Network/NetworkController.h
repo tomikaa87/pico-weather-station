@@ -2,7 +2,7 @@
 
 #include "WiFiController.h"
 
-#include "../IRunnable.h"
+#include "Runnable.h"
 
 #include <array>
 
@@ -11,7 +11,7 @@ namespace Network
 
 class Socket;
 
-class NetworkController : public IRunnable
+class NetworkController : public Runnable
 {
 public:
     void addSocket(Socket* socket);

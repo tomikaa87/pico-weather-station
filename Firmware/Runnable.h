@@ -1,9 +1,9 @@
 #pragma once
 
-class IRunnable
+class Runnable
 {
 public:
-    virtual ~IRunnable() = default;
+    virtual ~Runnable() = default;
 
     virtual void run() = 0;
 };

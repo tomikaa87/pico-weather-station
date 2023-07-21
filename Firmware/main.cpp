@@ -425,7 +425,7 @@ TouchPanelControllerData readTouchPanelController()
         spi_write_blocking(spi1, &ctrl, 1);
 
         busy_wait_ms(1);
-        
+
         uint8_t data[2] = { 0 };
         spi_read_blocking(spi1, 0, data, sizeof(data));
 
@@ -468,7 +468,7 @@ TouchPanelControllerData readTouchPanelController()
         readAdc(0xB1),
         readAdc(0xC2)
     };
-    
+
     // Dummy Y measurement to avoid noise
     readAdc(0xD1);
 
@@ -672,7 +672,7 @@ void core1_main()
 
     printf("Initialization finished\r\n");
 
-    const auto tasks = std::array<std::reference_wrapper<IRunnable>, 2>{
+    const auto tasks = std::array<std::reference_wrapper<Runnable>, 2>{
         *envSens,
         *radioReceiver
     };
@@ -703,7 +703,7 @@ void core1_main()
             updateMillis = millis;
 
             [[maybe_unused]] const auto touchPanelData = readTouchPanelController();
-    
+
 #if ENABLE_DIAG_SCREEN
 
 
@@ -966,7 +966,7 @@ int main()
 
     Network::NetworkController networkController;
 
-    const std::array<std::reference_wrapper<IRunnable>, 1> runnables{
+    const std::array<std::reference_wrapper<Runnable>, 1> runnables{
         networkController
     };
 

@@ -1,11 +1,11 @@
 #pragma once
 
-#include "../IRunnable.h"
+#include "Runnable.h"
 
 namespace Network
 {
 
-class WiFiController : public IRunnable
+class WiFiController : public Runnable
 {
 public:
     WiFiController();

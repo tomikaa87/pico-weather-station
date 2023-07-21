@@ -1,13 +1,13 @@
 #pragma once
 
-#include "../IRunnable.h"
+#include "Runnable.h"
 
 #include <array>
 #include <cstdint>
 
 namespace Hardware
 {
-    class RadioReceiver : public IRunnable
+    class RadioReceiver : public Runnable
     {
     public:
         RadioReceiver();
