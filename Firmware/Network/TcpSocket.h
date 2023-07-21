@@ -24,28 +24,34 @@ public:
     bool connect(const char* host, uint16_t port) override;
     bool disconnect() override;
 
-    void read() override;
-    void write() override;
+    std::vector<std::byte> read() override;
+    bool write(std::vector<std::byte>&& data) override;
 
 protected:
     void run() override;
 
 private:
-    static constexpr auto PoolTimeSeconds = 5;
+    static constexpr auto PoolTimeSeconds = 1;
+    static constexpr auto RxBufSize = 4096;
 
     enum class State
     {
         Idle,
         ConnectCalled,
         Connecting,
-        Connected,
-        DisconnectCalled
+        Connected
     } _state{ State::Idle };
 
     uint32_t _lastConnectMillis{ 0 };
     struct tcp_pcb* _tcpPcb{ nullptr };
     ip_addr_t _remoteAddr{};
     uint16_t _port{};
+
+    std::vector<std::byte> _txData;
+    std::size_t _txOffset{ 0 };
+    bool _txPaused{ false };
+
+    std::vector<std::byte> _rxData;
 
     err_t poll();
     err_t sent(u16_t len);
@@ -54,6 +60,7 @@ private:
     err_t connected(err_t err);
 
     void doConnect();
+    void doSend();
 };
 
 }

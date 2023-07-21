@@ -1,10 +1,13 @@
 #pragma once
 
+#include <cstdint>
+#include <vector>
+
 class IoDevice
 {
 public:
     virtual ~IoDevice() = default;
 
-    virtual void read() = 0;
-    virtual void write() = 0;
+    virtual std::vector<std::byte> read() = 0;
+    virtual bool write(std::vector<std::byte>&& data) = 0;
 };
