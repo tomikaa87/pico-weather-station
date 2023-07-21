@@ -22,6 +22,7 @@ public:
     TcpSocket(NetworkController& controller);
 
     bool connect(const char* host, uint16_t port) override;
+    bool disconnect() override;
 
     void read() override;
     void write() override;
@@ -37,7 +38,8 @@ private:
         Idle,
         ConnectCalled,
         Connecting,
-        Connected
+        Connected,
+        DisconnectCalled
     } _state{ State::Idle };
 
     uint32_t _lastConnectMillis{ 0 };

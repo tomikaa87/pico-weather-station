@@ -66,6 +66,23 @@ bool TcpSocket::connect(const char* const host, const uint16_t port)
     return true;
 }
 
+bool TcpSocket::disconnect()
+{
+    if (_state == State::Idle) {
+        return false;
+    }
+
+    if (tcp_close(_tcpPcb) != ERR_OK) {
+        return false;
+    }
+
+    _state = State::Idle;
+    _tcpPcb = nullptr;
+    _stateChangedHandler.signal(Socket::State::Disconnected);
+
+    return true;
+}
+
 void TcpSocket::read()
 {}
 
@@ -112,6 +129,8 @@ void TcpSocket::err(const err_t err)
 {
     printf("TcpSocket: error, err=%d\n", err);
 
+    _state = State::Idle;
+    _stateChangedHandler.signal(Socket::State::Disconnected);
     _errorHandler.signal();
 
     _state = State::Idle;

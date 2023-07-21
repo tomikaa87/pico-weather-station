@@ -19,6 +19,7 @@ public:
     ~Socket() override;
 
     virtual bool connect(const char* host, uint16_t port) = 0;
+    virtual bool disconnect() = 0;
 
     enum class State
     {
