@@ -33,3 +33,9 @@
 
 # macOS
 .DS_Store
+
+# Generated files
+**/cmake-build*/
+
+# CLion files
+**/.idea/
